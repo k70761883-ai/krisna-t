@@ -1040,6 +1040,8 @@ function App() {
           newRoute.startsWith("#/suggestion-form") ||
           newRoute.startsWith("#/portal") ||
           newRoute.startsWith("#/freelancer-portal") ||
+          newRoute.startsWith("#/profile") ||
+          newRoute.startsWith("#/portfolio") ||
           newRoute.startsWith("#/login") ||
           newRoute === "#/home" ||
           newRoute === "#";
@@ -1062,7 +1064,9 @@ function App() {
           newRoute.startsWith("#/feedback") ||
           newRoute.startsWith("#/suggestion-form") ||
           newRoute.startsWith("#/portal") ||
-          newRoute.startsWith("#/freelancer-portal");
+          newRoute.startsWith("#/freelancer-portal") ||
+          newRoute.startsWith("#/profile") ||
+          newRoute.startsWith("#/portfolio");
 
         if (!didRestoreLastRouteRef.current) {
           didRestoreLastRouteRef.current = true;
@@ -1254,7 +1258,9 @@ function App() {
       route.startsWith("#/public") ||
       route.startsWith("#/gallery") ||
       route.startsWith("#/portal") ||
-      route.startsWith("#/freelancer-portal");
+      route.startsWith("#/freelancer-portal") ||
+      route.startsWith("#/profile") ||
+      route.startsWith("#/portfolio");
 
     document.body.classList.toggle("app-theme", !isPublicRoute);
     document.body.classList.toggle("public-page-body", isPublicRoute);

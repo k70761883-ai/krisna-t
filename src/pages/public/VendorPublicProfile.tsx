@@ -3,12 +3,15 @@ import { VendorProfile, VendorPortfolio } from '../../types';
 import { getVendorProfile } from '../../services/vendorProfile';
 import { listVendorPortfolios } from '../../services/vendorPortfolios';
 
+const INITIAL_VISIBLE = 6;
+
 const VendorPublicProfile: React.FC = () => {
     const [profile, setProfile] = useState<VendorProfile | null>(null);
     const [portfolios, setPortfolios] = useState<VendorPortfolio[]>([]);
     const [loading, setLoading] = useState(true);
     const [menuOpen, setMenuOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState<string>('Semua');
+    const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -34,6 +37,24 @@ const VendorPublicProfile: React.FC = () => {
     const categories = ['Semua', ...Array.from(new Set(portfolios.map(p => p.category).filter(Boolean)))];
     const filteredPortfolios = activeFilter === 'Semua' ? portfolios : portfolios.filter(p => p.category === activeFilter);
 
+    // Reset showAll when filter changes
+    const handleFilterChange = (cat: string) => {
+        setActiveFilter(cat);
+        setShowAll(false);
+    };
+
+    const visiblePortfolios = showAll ? filteredPortfolios : filteredPortfolios.slice(0, INITIAL_VISIBLE);
+    const hasMore = filteredPortfolios.length > INITIAL_VISIBLE;
+
+    // Smooth scroll helper — avoids hash routing conflicts
+    const scrollTo = (id: string) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        setMenuOpen(false);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f7f4f0]">
@@ -49,7 +70,6 @@ const VendorPublicProfile: React.FC = () => {
     const vendorName = profile?.hero_title || 'Photography';
 
     const handlePortfolioClick = (id: string) => {
-        // Navigate to portfolio detail without going to dashboard
         window.location.hash = `#/portfolio/${id}`;
     };
 
@@ -61,15 +81,33 @@ const VendorPublicProfile: React.FC = () => {
             {/* ─── Navbar ─── */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-[#f7f4f0]/90 backdrop-blur-sm border-b border-[#e5ddd4]/60">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                    {/* Left nav links */}
                     <div className="hidden md:flex items-center gap-8">
-                        <a href="#about" className="text-xs text-[#8a7260] tracking-[0.18em] uppercase hover:text-[#3d2e22] transition-colors" style={{ fontFamily: 'Montserrat, sans-serif' }}>About</a>
-                        <a href="#portfolio" className="text-xs text-[#8a7260] tracking-[0.18em] uppercase hover:text-[#3d2e22] transition-colors" style={{ fontFamily: 'Montserrat, sans-serif' }}>Portfolio</a>
+                        <button
+                            onClick={() => scrollTo('about')}
+                            className="text-xs text-[#8a7260] tracking-[0.18em] uppercase hover:text-[#3d2e22] transition-colors bg-transparent border-none cursor-pointer"
+                            style={{ fontFamily: 'Montserrat, sans-serif' }}
+                        >
+                            About
+                        </button>
+                        <button
+                            onClick={() => scrollTo('portfolio')}
+                            className="text-xs text-[#8a7260] tracking-[0.18em] uppercase hover:text-[#3d2e22] transition-colors bg-transparent border-none cursor-pointer"
+                            style={{ fontFamily: 'Montserrat, sans-serif' }}
+                        >
+                            Portfolio
+                        </button>
                     </div>
 
-                    <a href="#hero" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+                    {/* Center logo */}
+                    <button
+                        onClick={() => scrollTo('hero')}
+                        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center bg-transparent border-none cursor-pointer"
+                    >
                         <span className="text-xl font-light text-[#3d2e22] tracking-[0.12em]">{vendorName}</span>
-                    </a>
+                    </button>
 
+                    {/* Right nav links */}
                     <div className="hidden md:flex items-center gap-8">
                         {whatsappUrl && (
                             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
@@ -80,6 +118,7 @@ const VendorPublicProfile: React.FC = () => {
                         )}
                     </div>
 
+                    {/* Mobile hamburger */}
                     <button className="md:hidden ml-auto text-[#8a7260]" onClick={() => setMenuOpen(!menuOpen)}>
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {menuOpen
@@ -90,12 +129,31 @@ const VendorPublicProfile: React.FC = () => {
                     </button>
                 </div>
 
+                {/* Mobile menu */}
                 {menuOpen && (
                     <div className="md:hidden bg-[#f7f4f0] border-t border-[#e5ddd4] px-6 py-4 flex flex-col gap-4">
-                        <a href="#about" onClick={() => setMenuOpen(false)} className="text-sm text-[#8a7260] tracking-[0.15em] uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>About</a>
-                        <a href="#portfolio" onClick={() => setMenuOpen(false)} className="text-sm text-[#8a7260] tracking-[0.15em] uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>Portfolio</a>
+                        <button
+                            onClick={() => scrollTo('about')}
+                            className="text-sm text-[#8a7260] tracking-[0.15em] uppercase text-left bg-transparent border-none cursor-pointer"
+                            style={{ fontFamily: 'Montserrat, sans-serif' }}
+                        >
+                            About
+                        </button>
+                        <button
+                            onClick={() => scrollTo('portfolio')}
+                            className="text-sm text-[#8a7260] tracking-[0.15em] uppercase text-left bg-transparent border-none cursor-pointer"
+                            style={{ fontFamily: 'Montserrat, sans-serif' }}
+                        >
+                            Portfolio
+                        </button>
                         {whatsappUrl && (
-                            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#8a7260] tracking-[0.15em] uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>Contact</a>
+                            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+                                className="text-sm text-[#8a7260] tracking-[0.15em] uppercase"
+                                style={{ fontFamily: 'Montserrat, sans-serif' }}
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                Contact
+                            </a>
                         )}
                     </div>
                 )}
@@ -163,7 +221,7 @@ const VendorPublicProfile: React.FC = () => {
                                 {categories.map(cat => (
                                     <button
                                         key={cat}
-                                        onClick={() => setActiveFilter(cat)}
+                                        onClick={() => handleFilterChange(cat)}
                                         className={`px-4 py-1.5 rounded-full text-xs tracking-[0.15em] uppercase border transition-all duration-200 ${activeFilter === cat
                                             ? 'bg-[#3d2e22] text-white border-[#3d2e22]'
                                             : 'bg-transparent text-[#8a7260] border-[#d4c5b0] hover:border-[#3d2e22] hover:text-[#3d2e22]'
@@ -176,9 +234,9 @@ const VendorPublicProfile: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Portfolio Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {filteredPortfolios.map(portfolio => {
+                        {/* Portfolio Grid — mobile: 2 col, tablet: 2 col, desktop: 3 col */}
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+                            {visiblePortfolios.map(portfolio => {
                                 const thumb = portfolio.cover_image_url
                                     || (portfolio.images && portfolio.images.length > 0 ? portfolio.images[0].url : null);
 
@@ -186,7 +244,8 @@ const VendorPublicProfile: React.FC = () => {
                                     <button
                                         key={portfolio.id}
                                         onClick={() => handlePortfolioClick(portfolio.id)}
-                                        className="relative aspect-square overflow-hidden group block text-left w-full"
+                                        className="relative overflow-hidden group block text-left w-full"
+                                        style={{ aspectRatio: '1/1' }}
                                     >
                                         {thumb ? (
                                             <img
@@ -213,9 +272,9 @@ const VendorPublicProfile: React.FC = () => {
                                             </p>
                                         </div>
                                         {/* Always-visible label */}
-                                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent group-hover:opacity-0 transition-opacity duration-300">
-                                            <p className="text-white/70 text-[9px] tracking-widest uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>{portfolio.category}</p>
-                                            <p className="text-white font-light text-sm leading-tight">{portfolio.title}</p>
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/65 to-transparent group-hover:opacity-0 transition-opacity duration-300">
+                                            <p className="text-white/70 text-[9px] tracking-widest uppercase mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>{portfolio.category}</p>
+                                            <p className="text-white font-light text-base leading-tight">{portfolio.title}</p>
                                         </div>
                                     </button>
                                 );
@@ -225,6 +284,36 @@ const VendorPublicProfile: React.FC = () => {
                         {filteredPortfolios.length === 0 && (
                             <div className="text-center py-16 text-[#8a7260]">
                                 Tidak ada portofolio dalam kategori ini.
+                            </div>
+                        )}
+
+                        {/* ─── Lihat Lebih Banyak / Sembunyikan Button ─── */}
+                        {hasMore && (
+                            <div className="mt-10 flex justify-center">
+                                <button
+                                    onClick={() => setShowAll(prev => !prev)}
+                                    className="group inline-flex items-center gap-3 border border-[#3d2e22]/30 text-[#3d2e22] text-xs tracking-[0.25em] uppercase px-10 py-4 hover:bg-[#3d2e22] hover:text-white transition-all duration-300"
+                                    style={{ fontFamily: 'Montserrat, sans-serif' }}
+                                >
+                                    {showAll ? (
+                                        <>
+                                            <svg className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 15l7-7 7 7" />
+                                            </svg>
+                                            Sembunyikan
+                                        </>
+                                    ) : (
+                                        <>
+                                            Lihat Lebih Banyak
+                                            <svg className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                            <span className="ml-1 text-[#8a7260] group-hover:text-white/70 text-[10px]">
+                                                (+{filteredPortfolios.length - INITIAL_VISIBLE})
+                                            </span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -262,8 +351,16 @@ const VendorPublicProfile: React.FC = () => {
                         <div>
                             <h4 className="text-[#c9a87c] text-xs tracking-[0.2em] uppercase mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>Studio</h4>
                             <ul className="space-y-2">
-                                <li><a href="#about" className="text-white/40 hover:text-white/70 text-sm font-light transition-colors">About</a></li>
-                                <li><a href="#portfolio" className="text-white/40 hover:text-white/70 text-sm font-light transition-colors">Portfolio</a></li>
+                                <li>
+                                    <button onClick={() => scrollTo('about')} className="text-white/40 hover:text-white/70 text-sm font-light transition-colors text-left bg-transparent border-none cursor-pointer">
+                                        About
+                                    </button>
+                                </li>
+                                <li>
+                                    <button onClick={() => scrollTo('portfolio')} className="text-white/40 hover:text-white/70 text-sm font-light transition-colors text-left bg-transparent border-none cursor-pointer">
+                                        Portfolio
+                                    </button>
+                                </li>
                             </ul>
                         </div>
                         <div>
@@ -279,8 +376,10 @@ const VendorPublicProfile: React.FC = () => {
                             <ul className="space-y-2">
                                 {categories.filter(c => c !== 'Semua').map(cat => (
                                     <li key={cat}>
-                                        <button onClick={() => { setActiveFilter(cat); document.getElementById('portfolio')?.scrollIntoView({ behavior: 'smooth' }); }}
-                                            className="text-white/40 hover:text-white/70 text-sm font-light transition-colors text-left">
+                                        <button
+                                            onClick={() => { handleFilterChange(cat); scrollTo('portfolio'); }}
+                                            className="text-white/40 hover:text-white/70 text-sm font-light transition-colors text-left bg-transparent border-none cursor-pointer"
+                                        >
                                             {cat}
                                         </button>
                                     </li>
