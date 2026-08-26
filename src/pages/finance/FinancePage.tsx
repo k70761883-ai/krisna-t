@@ -361,6 +361,12 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
     const [categoryFilter, setCategoryFilter] = useState<{ type: TransactionType | 'all', category: string }>({ type: 'all', category: 'Semua' });
     const [reportFilters, setReportFilters] = useState({ client: 'all', dateFrom: '', dateTo: '' });
     const [profitReportFilters, setProfitReportFilters] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
+    const [transactionProjectMonthFilter, setTransactionProjectMonthFilter] = useState<string>(() => {
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        return `${now.getFullYear()}-${month}`;
+    });
+
 
     const [offset, setOffset] = useState(100);
     const [hasMore, setHasMore] = useState(true);
@@ -2216,22 +2222,42 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                             <div className="input-group"><select id="sourceId" name="sourceId" value={form.sourceId} onChange={handleFormChange} className="input-field" required><option value="">Pilih Sumber...</option>{cards.map(c => (<option key={c.id} value={`card-${c.id}`}>{c.cardHolderName} {c.cardType !== CardType.TUNAI ? `(${c.bankName} **** ${c.lastFourDigits})` : '(Tunai)'} (Saldo: {formatCurrency(c.balance)})</option>))}{(pockets.filter(p => p.type === PocketType.EXPENSE).map(p => (<option key={p.id} value={`pocket-${p.id}`}>{p.name} (Sisa: {formatCurrency(p.amount)})</option>)))}</select><label htmlFor="sourceId" className="input-label">Sumber Dana</label></div>
                         )}
 
-                        <div className="input-group">
-                            <select
-                                id="projectId"
-                                name="projectId"
-                                value={form.projectId || ''}
-                                onChange={handleFormChange}
-                                className="input-field"
-                            >
-                                <option value="">Tidak Terkait Proyek</option>
-                                {projects.map(p => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.projectName} ({p.clientName})
-                                    </option>
-                                ))}
-                            </select>
-                            <label htmlFor="projectId" className="input-label">Terkait Proyek (Opsional)</label>
+                        <div className="input-group flex gap-2">
+                            <div className="flex-1 relative">
+                                <select
+                                    id="projectId"
+                                    name="projectId"
+                                    value={form.projectId || ''}
+                                    onChange={handleFormChange}
+                                    className="input-field"
+                                >
+                                    <option value="">Tidak Terkait Proyek</option>
+                                    {projects
+                                        .filter(p => {
+                                            if (!transactionProjectMonthFilter) return true;
+                                            if (!p.date) return true; // if project has no date, show it or hide it? Let's hide it if filtered. Or wait, maybe return true if no date? Let's assume projects have dates.
+                                            const pDate = new Date(p.date);
+                                            const [fYear, fMonth] = transactionProjectMonthFilter.split('-');
+                                            return pDate.getFullYear() === parseInt(fYear) && (pDate.getMonth() + 1) === parseInt(fMonth);
+                                        })
+                                        .map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.projectName} ({p.clientName})
+                                        </option>
+                                    ))}
+                                </select>
+                                <label htmlFor="projectId" className="input-label">Terkait Proyek (Opsional)</label>
+                            </div>
+                            <div className="w-1/3 relative">
+                                <input 
+                                    type="month" 
+                                    value={transactionProjectMonthFilter} 
+                                    onChange={(e) => setTransactionProjectMonthFilter(e.target.value)} 
+                                    className="input-field text-sm p-2 h-full"
+                                    title="Filter Bulan Proyek"
+                                />
+                                <label className="input-label text-[10px]">Bulan Proyek</label>
+                            </div>
                         </div>
                     </>}
                     {modalState.type === 'card' && <>

@@ -227,6 +227,7 @@ export interface Lead {
   notes?: string;
   whatsapp?: string;
   address?: string;
+  eventDate?: string; // Planned wedding event date
 }
 
 export interface Client {
@@ -284,7 +285,7 @@ export interface Package {
 // Supported regions for packages and public booking links
 export type Region = string; // allow custom region values; REGIONS below are suggestions
 export const REGIONS: { value: Region; label: string }[] = [
-  { value: 'bandung', label: 'Bandung' },
+  { value: 'vendor', label: 'Vendor' },
   { value: 'jabodetabek', label: 'Jabodetabek' },
   { value: 'banten', label: 'Banten' },
 ];

@@ -56,6 +56,7 @@ const PublicBookingForm: React.FC<PublicBookingFormProps> = ({
     const [formData, setFormData] = useState({ ...initialFormState, projectType: userProfile.projectTypes[0] || '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [submittedData, setSubmittedData] = useState<any>(null); // Store submitted data for WhatsApp template
     const [promoFeedback, setPromoFeedback] = useState({ type: '', message: '' });
     const [paymentProof, setPaymentProof] = useState<File | null>(null);
     const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
@@ -461,6 +462,15 @@ const PublicBookingForm: React.FC<PublicBookingFormProps> = ({
 
             setIsSubmitting(false);
             setIsSubmitted(true);
+            
+            // Store submitted data for WhatsApp template
+            setSubmittedData({
+                formData: { ...formData },
+                selectedPackage,
+                selectedAddOns,
+                totalProject,
+                userProfile
+            });
 
             addNotification({
                 title: 'Booking Baru Diterima!',
@@ -475,12 +485,112 @@ const PublicBookingForm: React.FC<PublicBookingFormProps> = ({
         }
     };
 
-    if (isSubmitted) {
+    if (isSubmitted && submittedData) {
+        // Generate WhatsApp message template using stored data
+        const { formData: submittedFormData, selectedPackage, selectedAddOns, totalProject, userProfile: submittedProfile } = submittedData;
+        const selectedAddOnsText = selectedAddOns
+            .map((addon: any) => `• ${addon.name} (+${formatCurrency(addon.price)})`)
+            .join('\n');
+        
+        const whatsappMessage = `Halo ${submittedProfile.companyName}! 👋
+
+Saya baru saja mengirim formulir booking melalui website Anda dengan detail berikut:
+
+📋 *INFORMASI BOOKING*
+• Nama: ${submittedFormData.clientName}
+• Telepon: ${submittedFormData.phone}
+• Email: ${submittedFormData.email || 'Tidak diisi'}
+• Lokasi: ${submittedFormData.location}
+• Tanggal: ${submittedFormData.date}
+• Package: ${selectedPackage?.name || 'Tidak dipilih'}
+${submittedFormData.durationSelection ? `• Durasi: ${submittedFormData.durationSelection}` : ''}
+${selectedAddOnsText ? `• Add-On:\n${selectedAddOnsText}` : ''}
+${submittedFormData.promoCode ? `• Kode Promo: ${submittedFormData.promoCode}` : ''}
+
+💰 *TOTAL BIAYA*
+• Total Package: ${formatCurrency(totalProject)}
+• DP yang akan dibayar: ${formatCurrency(Number(submittedFormData.dp) || 0)}
+${submittedFormData.transportCost ? `• Biaya Transport: ${formatCurrency(Number(submittedFormData.transportCost))}` : ''}
+
+Mohon konfirmasi untuk langkah selanjutnya. Terima kasih! 🙏`;
+
+        const whatsappUrl = `https://wa.me/${submittedProfile.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`;
+
         return (
             <div className="flex items-center justify-center min-h-screen p-3 md:p-4">
                 <div className="w-full max-w-2xl p-6 md:p-8 text-center bg-public-surface rounded-2xl shadow-lg border border-public-border">
-                    <h1 className="text-xl md:text-2xl font-bold text-gradient">Terima Kasih!</h1>
-                    <p className="mt-4 text-sm md:text-base text-public-text-primary">Formulir pemesanan Anda telah berhasil kami terima. Tim kami akan segera menghubungi Anda untuk konfirmasi lebih lanjut.</p>
+                    <div className="mb-6">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h1 className="text-xl md:text-2xl font-bold text-gradient">Terima Kasih!</h1>
+                        <p className="mt-4 text-sm md:text-base text-public-text-primary">
+                            Formulir pemesanan Anda telah berhasil kami terima. Tim kami akan segera menghubungi Anda untuk konfirmasi lebih lanjut.
+                        </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className="text-sm text-green-800 dark:text-green-200 mb-3">
+                                Untuk konfirmasi yang lebih cepat, Anda dapat langsung menghubungi admin kami via WhatsApp:
+                            </p>
+                            <a
+                                href={whatsappUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+                            >
+                                <MessageSquareIcon className="w-5 h-5 mr-2" />
+                                Chat Konfirmasi Booking via WhatsApp
+                            </a>
+                        </div>
+                        
+                        <p className="text-xs text-public-text-secondary">
+                            Pesan sudah disiapkan dengan detail booking Anda. Tinggal klik kirim! 📱
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
+    // Fallback for submitted state without data (shouldn't happen but safety net)
+    if (isSubmitted) {
+        const basicWhatsappUrl = `https://wa.me/${userProfile.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent('Halo! Saya baru saja mengirim formulir booking melalui website Anda. Mohon konfirmasi untuk langkah selanjutnya. Terima kasih!')}`;
+        
+        return (
+            <div className="flex items-center justify-center min-h-screen p-3 md:p-4">
+                <div className="w-full max-w-2xl p-6 md:p-8 text-center bg-public-surface rounded-2xl shadow-lg border border-public-border">
+                    <div className="mb-6">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h1 className="text-xl md:text-2xl font-bold text-gradient">Terima Kasih!</h1>
+                        <p className="mt-4 text-sm md:text-base text-public-text-primary">
+                            Formulir pemesanan Anda telah berhasil kami terima. Tim kami akan segera menghubungi Anda untuk konfirmasi lebih lanjut.
+                        </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className="text-sm text-green-800 dark:text-green-200 mb-3">
+                                Hubungi admin kami via WhatsApp untuk konfirmasi:
+                            </p>
+                            <a
+                                href={basicWhatsappUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+                            >
+                                <MessageSquareIcon className="w-5 h-5 mr-2" />
+                                Chat via WhatsApp
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

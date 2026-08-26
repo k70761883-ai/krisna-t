@@ -45,6 +45,7 @@ function normalizeLead(row: any): Lead {
     notes: row.notes ?? undefined,
     whatsapp: row.whatsapp ?? undefined,
     address: row.address ?? undefined,
+    eventDate: row.event_date ?? undefined,
   };
 }
 
@@ -58,5 +59,6 @@ function denormalizeLead(obj: Partial<Lead>): any {
     ...(obj.notes !== undefined ? { notes: obj.notes } : {}),
     ...(obj.whatsapp !== undefined ? { whatsapp: obj.whatsapp } : {}),
     ...(obj.address !== undefined ? { address: obj.address } : {}),
+    ...(obj.eventDate !== undefined ? { event_date: obj.eventDate } : {}),
   };
 }

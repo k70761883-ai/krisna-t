@@ -8,6 +8,7 @@ const PublicLeadForm: React.FC<PublicLeadFormProps> = ({ setLeads, userProfile, 
         name: '',
         whatsapp: '',
         eventLocation: '',
+        eventDate: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -32,6 +33,7 @@ const PublicLeadForm: React.FC<PublicLeadFormProps> = ({ setLeads, userProfile, 
                 status: LeadStatus.DISCUSSION,
                 date: new Date().toISOString(),
                 notes,
+                eventDate: formState.eventDate || undefined,
             });
             setLeads(prev => [created, ...prev]);
             setIsSubmitted(true);
@@ -152,7 +154,7 @@ const PublicLeadForm: React.FC<PublicLeadFormProps> = ({ setLeads, userProfile, 
                         <div className="flex items-center justify-center gap-4">
                             <div className="h-px w-8 bg-slate-300"></div>
                             <span className="text-[11px] font-normal text-slate-400 tracking-[0.4em] uppercase">
-                                Konsultasi & Inquiry
+                                Konsultasi &amp; Inquiry
                             </span>
                             <div className="h-px w-8 bg-slate-300"></div>
                         </div>
@@ -222,6 +224,35 @@ const PublicLeadForm: React.FC<PublicLeadFormProps> = ({ setLeads, userProfile, 
                                     required
                                 />
                             </div>
+
+                            {/* Input Group: Event Date */}
+                            <div className="relative group">
+                                <label 
+                                    htmlFor="eventDate" 
+                                    className="block text-[10px] font-normal text-slate-400 uppercase tracking-[0.2em] mb-4 transition-all group-focus-within:text-slate-900 group-focus-within:translate-x-1"
+                                >
+                                    Tanggal Rencana Acara Pernikahan
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 pointer-events-none">
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="date"
+                                        id="eventDate"
+                                        name="eventDate"
+                                        value={formState.eventDate}
+                                        onChange={handleFormChange}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        className="w-full bg-white/40 border-2 border-slate-200/80 pl-10 sm:pl-16 pr-4 sm:pr-8 py-2.5 sm:py-5 rounded-xl sm:rounded-[1.5rem] text-sm sm:text-xl font-light text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-slate-800 focus:bg-white/80 transition-all duration-300 shadow-sm"
+                                    />
+                                </div>
+                                <p className="text-[9px] text-slate-400 mt-2 pl-1 tracking-wide">
+                                    Opsional — isi jika sudah memiliki rencana tanggal acara
+                                </p>
+                            </div>
                         </div>
 
                         {/* Submit Action */}
@@ -284,10 +315,17 @@ const PublicLeadForm: React.FC<PublicLeadFormProps> = ({ setLeads, userProfile, 
                 input::placeholder {
                     opacity: 0.5;
                 }
+                input[type="date"]::-webkit-calendar-picker-indicator {
+                    opacity: 0;
+                    position: absolute;
+                    right: 0;
+                    width: 100%;
+                    height: 100%;
+                    cursor: pointer;
+                }
             `}</style>
         </div>
     );
 };
 
 export default PublicLeadForm;
-

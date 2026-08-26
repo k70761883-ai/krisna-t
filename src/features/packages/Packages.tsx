@@ -47,7 +47,7 @@ const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) 
 const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setAddOns, projects, profile }) => {
     const [packageFormData, setPackageFormData] = useState<any>(emptyPackageForm);
     const [packageEditMode, setPackageEditMode] = useState<string | null>(null);
-    const [regionFilter, setRegionFilter] = useState<'' | Region>(REGIONS[0].value as any);
+    const [regionFilter, setRegionFilter] = useState<'' | Region>('');
 
     const [addOnFormData, setAddOnFormData] = useState(emptyAddOnForm);
     const [addOnEditMode, setAddOnEditMode] = useState<string | null>(null);
@@ -152,7 +152,7 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
     const packagesByRegionCategory = useMemo(() => {
         // Only used when no regionFilter applied: show separate boxes per region
         const byRegion: Record<string, Record<string, Package[]>> = {};
-        const label = (r?: string | null) => r === 'bandung' ? 'Bandung' : r === 'jabodetabek' ? 'Jabodetabek' : r === 'banten' ? 'Banten' : 'Tanpa Wilayah';
+        const label = (r?: string | null) => r === 'vendor' ? 'Vendor' : r === 'jabodetabek' ? 'Jabodetabek' : r === 'banten' ? 'Banten' : 'Tanpa Wilayah';
         for (const pkg of packages) {
             const rl = label(pkg.region as any);
             if (!byRegion[rl]) byRegion[rl] = {};
@@ -460,6 +460,12 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
                 </div>
             </PageHeader>
             <div className="flex flex-wrap gap-2 pb-2">
+                <button
+                    onClick={() => setRegionFilter('')}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border ${regionFilter === '' ? 'bg-brand-accent text-white border-brand-accent shadow-md' : 'glass-card text-brand-text-secondary hover:text-brand-text-light hover:bg-white/50 border-brand-border/50'}`}
+                >
+                    Semua
+                </button>
                 {unionRegions.map(r => (
                     <button
                         key={r.value}

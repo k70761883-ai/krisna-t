@@ -87,6 +87,7 @@ import { listProjectsWithRelations } from "./src/services/projects";
 import { updateProject as updateProjectInDb } from "./src/services/projects";
 import { getProfile as getProfileFromDb } from "./src/services/profile";
 import { useAppData } from "./src/hooks/useAppData";
+import { useData } from "./src/contexts/DataContext";
 import { DataLoadingWrapper } from "./src/shared/ui/LoadingState";
 import { listAllTeamPayments } from "./src/services/teamProjectPayments";
 import { listUsers as listUsersFromDb } from "./src/services/users";
@@ -409,6 +410,30 @@ function App() {
   // --- Lazy Data Loading Hook ---
   const appData = useAppData();
 
+  React.useEffect(() => {
+    if (appData.loaded.clients) setClients(appData.clients);
+  }, [appData.clients, appData.loaded.clients]);
+
+  React.useEffect(() => {
+    if (appData.loaded.projects) setProjects(appData.projects as any);
+  }, [appData.projects, appData.loaded.projects]);
+
+  React.useEffect(() => {
+    if (appData.loaded.teamMembers) setTeamMembers(appData.teamMembers);
+  }, [appData.teamMembers, appData.loaded.teamMembers]);
+
+  React.useEffect(() => {
+    if (appData.loaded.transactions) setTransactions(appData.transactions);
+  }, [appData.transactions, appData.loaded.transactions]);
+
+  React.useEffect(() => {
+    if (appData.loaded.leads) setLeads(appData.leads);
+  }, [appData.leads, appData.loaded.leads]);
+
+  React.useEffect(() => {
+    if (appData.loaded.clientFeedback) setClientFeedback(appData.clientFeedback);
+  }, [appData.clientFeedback, appData.loaded.clientFeedback]);
+
   // --- [NEW] CENTRALIZED NOTIFICATION HANDLER ---
   const addNotification = async (
     newNotificationData: Omit<Notification, "id" | "timestamp" | "isRead">,
@@ -493,7 +518,7 @@ function App() {
   //             if (payload.eventType === 'UPDATE') {
   //                 setPromoCodes(current => current.map(pc => pc.id === payload.new.id ? { ...(pc as any), ...(payload.new as any) } : pc));
   // --- Sync clients from lazy loading hook with REALTIME ---
-  React.useEffect(() => {
+  /* React.useEffect(() => {
     if (appData.loaded.clients) {
       setClients(appData.clients);
     }
@@ -532,10 +557,10 @@ function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [appData.clients, appData.loaded.clients]);
+  }, [appData.clients, appData.loaded.clients]); */
 
   // --- Sync team members from lazy loading hook with REALTIME ---
-  React.useEffect(() => {
+  /* React.useEffect(() => {
     if (appData.loaded.teamMembers) {
       setTeamMembers(appData.teamMembers);
     }
@@ -574,24 +599,24 @@ function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [appData.teamMembers, appData.loaded.teamMembers]);
+  }, [appData.teamMembers, appData.loaded.teamMembers]); */
 
   // --- Sync leads from lazy loading hook ---
-  React.useEffect(() => {
+  /* React.useEffect(() => {
     if (appData.loaded.leads) {
       setLeads(appData.leads);
     }
-  }, [appData.leads, appData.loaded.leads]);
+  }, [appData.leads, appData.loaded.leads]); */
 
   // --- Sync client feedback from lazy loading hook ---
-  React.useEffect(() => {
+  /* React.useEffect(() => {
     if (appData.loaded.clientFeedback) {
       setClientFeedback(appData.clientFeedback);
     }
-  }, [appData.clientFeedback, appData.loaded.clientFeedback]);
+  }, [appData.clientFeedback, appData.loaded.clientFeedback]); */
 
   // --- Sync transactions from lazy loading hook with REALTIME ---
-  React.useEffect(() => {
+  /* React.useEffect(() => {
     if (appData.loaded.transactions) {
       setTransactions(appData.transactions);
     }
@@ -630,16 +655,16 @@ function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [appData.transactions, appData.loaded.transactions]);
+  }, [appData.transactions, appData.loaded.transactions]); */
 
   // --- Sync projects from lazy loading hook (which already uses relations) with REALTIME ---
-  React.useEffect(() => {
+  /* React.useEffect(() => {
     if (appData.loaded.projects) {
       // Prefer projects from appData (loaded via listProjectsWithRelations)
       setProjects(appData.projects as any);
     }
     // Keep existing realtime subscription below to capture future changes on 'projects'
-  }, [appData.projects, appData.loaded.projects]);
+  }, [appData.projects, appData.loaded.projects]); */
 
   // Helper: map DB row (snake_case) to Card interface (camelCase)
   const mapCardRowToCard = (row: any): Card => ({
@@ -822,7 +847,7 @@ function App() {
       try {
         const remote = await listPackages();
         if (!isMounted) return;
-        if (Array.isArray(remote) && remote.length) setPackages(remote as any);
+        if (Array.isArray(remote)) setPackages(remote as any);
       } catch (e) {
         console.warn("[Supabase] Failed to fetch packages.", e);
       }
@@ -842,7 +867,7 @@ function App() {
       try {
         const remote = await listAddOns();
         if (!isMounted) return;
-        if (Array.isArray(remote) && remote.length) setAddOns(remote as any);
+        if (Array.isArray(remote)) setAddOns(remote as any);
       } catch (e) {
         console.warn("[Supabase] Failed to fetch add-ons.", e);
       }
