@@ -154,6 +154,40 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, users }) => {
                         </a>
                     </div>
                 </div>
+
+                {/* Demo Users Card */}
+                <div className="mt-4 bg-amber-50/90 backdrop-blur-sm border border-amber-200 rounded-2xl p-4 shadow-md">
+                    <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3 text-center">
+                        Demo Akun
+                    </p>
+                    <div className="space-y-2">
+                        {[
+                            { role: 'Admin', email: 'admin@atter.com', password: 'hashedpassword' },
+                            { role: 'Kasir', email: 'kasir@atter.com', password: 'hashedpassword' },
+                            { role: 'Member', email: 'member@atter.com', password: 'hashedpassword' },
+                        ].map((demo) => (
+                            <button
+                                key={demo.email}
+                                type="button"
+                                onClick={() => { setEmail(demo.email); setPassword(demo.password); setError(''); }}
+                                className="w-full flex items-center justify-between px-3 py-2 bg-white border border-amber-200 rounded-lg hover:bg-amber-100 hover:border-amber-400 transition-colors group"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold bg-amber-400 text-white px-2 py-0.5 rounded-full min-w-[46px] text-center">
+                                        {demo.role}
+                                    </span>
+                                    <span className="text-xs text-slate-600 font-mono">{demo.email}</span>
+                                </div>
+                                <span className="text-xs text-amber-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Gunakan →
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-xs text-amber-600 text-center mt-2 opacity-70">
+                        Klik akun untuk mengisi form otomatis
+                    </p>
+                </div>
             </div>
         </div>
     );

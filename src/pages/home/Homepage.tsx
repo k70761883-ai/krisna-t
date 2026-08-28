@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { FolderKanbanIcon, DollarSignIcon, UsersIcon, CheckIcon, LinkIcon, HomeIcon, CalendarIcon, FileTextIcon, MessageSquareIcon, StarIcon, UserCheckIcon, BriefcaseIcon } from '../../constants';
+import { FolderKanbanIcon, DollarSignIcon, UsersIcon, CheckIcon, LinkIcon, HomeIcon, CalendarIcon, FileTextIcon, MessageSquareIcon, StarIcon, UserCheckIcon, BriefcaseIcon, WhatsappIcon } from '../../constants';
 
 const FeatureCard: React.FC<{ title: string; description: string; icon: React.ReactNode }> = ({ title, description, icon }) => (
     <div className="bg-brand-surface p-6 rounded-2xl shadow-lg border border-brand-border text-center">
@@ -52,7 +52,7 @@ const Homepage: React.FC = () => {
                 <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row items-center gap-12">
                     <div className="flex-1 text-center md:text-left">
                         <h1 className="text-4xl md:text-6xl font-extrabold text-brand-text-light leading-tight">
-                            Sistem Manajemen All-in-One <br /> untuk <span className="text-brand-accent">Vendor Pernikahan</span>
+                            Sistem Manajemen All-in-One <br /> untuk <span className="text-brand-accent">Vendor Photography</span>
                         </h1>
                         <p className="max-w-2xl mt-6 text-lg text-brand-text-secondary">
                             Dari manajemen pengantin dan Acara Pernikahan hingga keuangan dan penjadwalan tim, weddfin menyediakan semua yang Anda butuhkan untuk berkembang.
@@ -172,6 +172,83 @@ const Homepage: React.FC = () => {
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                             allowFullScreen
                         />
+                    </div>
+                </div>
+            </section>
+
+            {/* Creator Section */}
+            <section className="py-20 px-6 bg-brand-surface">
+                <div className="max-w-5xl mx-auto">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-brand-text-light">Profil Developer</h2>
+                        <p className="text-brand-text-secondary mt-2">Web Dev, Desain Konten Medsos & Desain, Video Editor</p>
+                    </div>
+                    <div className="bg-brand-bg rounded-2xl shadow-2xl border border-brand-border p-8 md:p-12">
+                        <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                            {/* Profile Photo */}
+                            <div className="flex-shrink-0">
+                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-xl border-4 border-brand-accent/20">
+                                    <img 
+                                        src="/assets/images/nopian-hadi.jpg" 
+                                        alt="Nopian Hadi" 
+                                        className="w-full h-full object-cover"
+                                        width="192"
+                                        height="192"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 text-center md:text-left">
+                                <h3 className="text-2xl md:text-3xl font-bold text-brand-text-light mb-2">Nopian Hadi</h3>
+                                <p className="text-brand-accent font-semibold mb-4">
+                                    Web Developer | Content & Social Media Designer | Video Editor
+                                </p>
+                                <p className="text-brand-text-secondary mb-6 leading-relaxed">
+                                    Seorang profesional kreatif yang passionate dalam Web Development, Desain Konten Medsos & Desain, serta Video Editing. 
+                                    Saya fokus pada pembuatan solusi digital komprehensif yang tidak hanya terlihat bagus secara visual, tetapi juga berfungsi 
+                                    dengan sempurna dan memiliki user experience terbaik.
+                                </p>
+                                
+                                {/* Specializations */}
+                                <div className="mb-6 space-y-2">
+                                    <div className="flex items-start gap-2 justify-center md:justify-start">
+                                        <span className="text-brand-text-light font-semibold min-w-[120px]">Spesialisasi:</span>
+                                        <span className="text-brand-text-secondary">React, Node.js, TypeScript</span>
+                                    </div>
+                                    <div className="flex items-start gap-2 justify-center md:justify-start">
+                                        <span className="text-brand-text-light font-semibold min-w-[120px]">Fokus:</span>
+                                        <span className="text-brand-text-secondary">Performance & User Experience</span>
+                                    </div>
+                                    <div className="flex items-start gap-2 justify-center md:justify-start">
+                                        <span className="text-brand-text-light font-semibold min-w-[120px]">Lokasi:</span>
+                                        <span className="text-brand-text-secondary">Indonesia</span>
+                                    </div>
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                                    <a 
+                                        href="https://nopianhad1.netlify.app/" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="button-secondary inline-flex items-center justify-center gap-2 px-6 py-3 group"
+                                    >
+                                        <LinkIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                        <span>Lihat Portfolio</span>
+                                    </a>
+                                    <a 
+                                        href="https://wa.me/6289540618407" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="button-primary inline-flex items-center justify-center gap-2 px-6 py-3 group"
+                                    >
+                                        <WhatsappIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                        <span>Hubungi via WhatsApp</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
