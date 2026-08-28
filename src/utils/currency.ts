@@ -1,3 +1,13 @@
+export const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+};
+
+// Currency formatter for CSV: avoids non-breaking space that Excel may render as 'Â'
+export const formatCurrencyCSV = (amount: number) => {
+    const numberPart = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(amount);
+    return `Rp ${numberPart}`; // regular space between Rp and number
+};
+
 export const formatIdNumber = (value: number) => {
     if (!Number.isFinite(value)) return '';
     return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(value);

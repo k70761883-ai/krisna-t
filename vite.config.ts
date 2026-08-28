@@ -51,8 +51,8 @@ export default defineConfig(({ mode }) => {
               if (id.includes('react-dom')) return 'vendor-react-dom';
               if (id.includes('react')) return 'vendor-react';
               if (id.includes('lucide-react')) return 'vendor-lucide';
-              if (id.includes('html2pdf.js') || id.includes('jspdf') || id.includes('html2canvas')) return 'vendor-pdf';
               return 'vendor-others';
+
             }
             // Don't split types.ts or constants.tsx - keep them in main bundle to avoid circular deps
             if (id.includes('/types.ts') || id.includes('/constants.tsx')) {

@@ -1,9 +1,7 @@
 import React from 'react';
 import { Transaction, TransactionType } from '../../../types';
 
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-}
+import { formatCurrency } from '../../../utils/currency';
 
 interface TransactionTableProps {
     transactions: Transaction[];

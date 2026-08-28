@@ -2,98 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Profile, Transaction, Project, User, ViewType, ProjectStatusConfig, SubStatusConfig, Package, ChatTemplate, ChecklistTemplate } from '../../types';
 import PageHeader from '../../layouts/PageHeader';
 import Modal from '../../shared/ui/Modal';
+import ToggleSwitch from '../../shared/ui/ToggleSwitch';
+import CategoryManager from './components/CategoryManager';
 import { PencilIcon, PlusIcon, Trash2Icon, KeyIcon, UsersIcon, ListIcon, FolderKanbanIcon, FileTextIcon, SettingsIcon, MessageSquareIcon, RefreshCwIcon, NAV_ITEMS, DEFAULT_INCOME_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES, DEFAULT_PROJECT_TYPES, DEFAULT_EVENT_TYPES, DEFAULT_PACKAGE_CATEGORIES, DEFAULT_PROJECT_STATUS_SUGGESTIONS, DEFAULT_BRIEFING_TEMPLATE, DEFAULT_TERMS_AND_CONDITIONS, DEFAULT_PACKAGE_SHARE_TEMPLATE, DEFAULT_BOOKING_FORM_TEMPLATE, CHAT_TEMPLATES, DEFAULT_BILLING_TEMPLATES, DEFAULT_INVOICE_SHARE_TEMPLATE, DEFAULT_RECEIPT_SHARE_TEMPLATE, DEFAULT_EXPENSE_SHARE_TEMPLATE, DEFAULT_PORTAL_SHARE_TEMPLATE } from '../../constants';
 import { upsertProfile } from '../../services/profile';
 import { createUser, updateUser, deleteUser } from '../../services/users';
 import { validateTemplate, processTemplate } from '../../services/chatTemplatesOffline';
 import { DEFAULT_CHECKLIST_TEMPLATES } from '../../services/weddingDayChecklist';
 
-// Helper Component for Toggle Switches
-const ToggleSwitch: React.FC<{ enabled: boolean; onChange: () => void; id?: string }> = ({ enabled, onChange, id }) => (
-    <button
-        type="button"
-        id={id}
-        className={`${enabled ? 'bg-brand-accent' : 'bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-offset-2 focus:ring-offset-brand-surface`}
-        onClick={onChange}
-    >
-        <span
-            className={`${enabled ? 'translate-x-5' : 'translate-x-0'} inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-        />
-    </button>
-);
 
-// Reusable UI component for managing a list of categories
-const CategoryManager: React.FC<{
-    title: string;
-    categories: string[];
-    inputValue: string;
-    onInputChange: (value: string) => void;
-    onAddOrUpdate: () => void;
-    onEdit: (value: string) => void;
-    onDelete: (value: string) => void;
-    editingValue: string | null;
-    onCancelEdit: () => void;
-    placeholder: string;
-    /** Opsi saran default untuk mempermudah input; jika ada, tombol "Tambah dari saran" ditampilkan */
-    suggestedDefaults?: string[];
-    onAddSuggested?: () => void;
-}> = ({ title, categories, inputValue, onInputChange, onAddOrUpdate, onEdit, onDelete, editingValue, onCancelEdit, placeholder, suggestedDefaults, onAddSuggested }) => {
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            onAddOrUpdate();
-        }
-    };
-
-    const renderCategoryItem = (category: string) => (
-        <div key={category} className="flex items-center justify-between p-2 md:p-2.5 bg-brand-bg rounded-md">
-            <span className="text-xs md:text-sm text-brand-text-primary truncate flex-1 mr-2">{category}</span>
-            <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0">
-                <button type="button" onClick={() => onEdit(category)} className="p-1 text-brand-text-secondary hover:text-brand-accent" title="Edit"><PencilIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
-                <button type="button" onClick={() => onDelete(category)} className="p-1 text-brand-text-secondary hover:text-brand-danger" title="Hapus"><Trash2Icon className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
-            </div>
-        </div>
-    );
-
-    return (
-        <div>
-            <h3 className="text-sm md:text-lg font-semibold text-brand-text-light border-b border-gray-700/50 pb-2 md:pb-3 mb-3 md:mb-4">{title}</h3>
-            <div className="flex flex-col sm:flex-row gap-2 mb-3 md:mb-4">
-                <div className="input-group flex-grow !mt-0">
-                    <input
-                        type="text"
-                        id={`input-${title.replace(/\s/g, '')}`}
-                        value={inputValue}
-                        onChange={e => onInputChange(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder=" "
-                        className="input-field"
-                    />
-                    <label htmlFor={`input-${title.replace(/\s/g, '')}`} className="input-label">{placeholder}</label>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={onAddOrUpdate} className="button-primary h-fit mt-2 flex-1 sm:flex-none">{editingValue ? 'Update' : 'Tambah'}</button>
-                    {editingValue && <button onClick={onCancelEdit} className="button-secondary h-fit mt-2 flex-1 sm:flex-none">Batal</button>}
-                </div>
-            </div>
-            {suggestedDefaults?.length && onAddSuggested && (
-                <div className="mb-3 md:mb-4">
-                    <button type="button" onClick={onAddSuggested} className="text-xs md:text-sm text-brand-accent hover:underline">
-                        + Tambah dari saran default
-                    </button>
-                </div>
-            )}
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {categories && categories.length > 0 ? categories.map(cat => renderCategoryItem(cat)) : (
-                    <div className="text-center text-brand-text-secondary text-sm py-4">
-                        Belum ada {title.toLowerCase()}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
 // --- Sub-component for Project Status Management ---
 const ProjectStatusManager: React.FC<{

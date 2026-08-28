@@ -12,56 +12,10 @@ import { createCard as createCardRow, updateCard as updateCardRow, deleteCard as
 import { createTransaction as createTransactionRow, updateCardBalance, updateTransaction as updateTransactionRow } from '../../services/transactions';
 import { createPocket as createPocketRow, updatePocket as updatePocketRow, deletePocket as deletePocketRow } from '../../services/pockets';
 
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-}
+import { formatCurrency, formatCurrencyCSV } from '../../utils/currency';
+import { downloadCSV } from '../../utils/export';
 
-// Currency formatter for CSV: avoids non-breaking space that Excel may render as 'Â'
-const formatCurrencyCSV = (amount: number) => {
-    const numberPart = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(amount);
-    return `Rp ${numberPart}`; // regular space between Rp and number
-}
-
-const downloadCSV = (
-    headers: string[],
-    data: (string | number | undefined)[][],
-    filename: string,
-    prefaceRows: (string | number | undefined)[][] = []
-) => {
-    // Use semicolon as delimiter for locales (like Indonesia) where Excel expects ';'
-    const DELIM = ';';
-    const normalizeField = (field: string | number | undefined) => {
-        const str = String(field ?? '');
-        if (str.includes(DELIM) || str.includes('"') || str.includes('\n')) {
-            return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-    };
-    const normalizeRow = (row: (string | number | undefined)[]) => row.map(normalizeField).join(DELIM);
-
-    const csvRows = [
-        // Excel delimiter hint to ensure proper column splitting
-        `sep=${DELIM}`,
-        ...prefaceRows.map(normalizeRow),
-        headers.map(normalizeField).join(DELIM),
-        ...data.map(normalizeRow)
-    ];
-
-    const csvString = csvRows.join('\n');
-    // Add UTF-8 BOM so Excel (Windows) recognizes encoding and Indonesian characters
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
-
-const PRODUCTION_COST_CATEGORIES = ["Gaji Tim / Vendor", "Transportasi", "Konsumsi", "Sewa Tempat", "Sewa Alat", "Produksi Fisik"];
+const PRODUCTION_COST_CATEGORIES = ["Gaji Tim / Vendor", "Transport", "Transportasi", "Konsumsi", "Sewa Tempat", "Sewa Alat", "Produksi Fisik"];
 
 const ShieldIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
@@ -81,223 +35,11 @@ const emptyTransaction = {
 const emptyPocket: Omit<FinancialPocket, 'id' | 'amount'> = { name: '', description: '', type: PocketType.SAVING, icon: 'piggy-bank' };
 const emptyCard: Omit<Card, 'id' | 'balance'> = { cardHolderName: 'Nama Pengguna', bankName: 'WBank', cardType: CardType.DEBIT, lastFourDigits: '', expiryDate: '', colorGradient: 'from-blue-500 to-cyan-500' };
 
-const CardWidget: React.FC<{ card: Card, onEdit: () => void, onDelete: () => void, onClick: () => void, connectedPockets: FinancialPocket[] }> = ({ card, onEdit, onDelete, onClick, connectedPockets }) => {
-    const gradient = card.colorGradient || 'from-slate-200 to-slate-400';
-    const isLight = gradient.includes('slate-100');
-    const textColor = isLight ? 'text-gray-800' : 'text-white';
+import { CardWidget } from '../../features/finance/components/CardWidget';
 
-    const ChipIcon = () => (
-        <svg className="w-10 h-8" viewBox="0 0 40 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="28" rx="4" fill="#D1D5DB" />
-            <rect x="4" y="4" width="32" height="20" rx="2" fill="#FBBF24" />
-            <path d="M4 14H18" stroke="#92400E" strokeWidth="2" />
-            <path d="M22 14H36" stroke="#92400E" strokeWidth="2" />
-            <path d="M20 4V12" stroke="#92400E" strokeWidth="2" />
-            <path d="M20 16V24" stroke="#92400E" strokeWidth="2" />
-        </svg>
-    );
-    const VisaLogo = () => <svg height="24px" viewBox="0 0 1000 310" className={`${isLight ? 'fill-black/70' : 'fill-white/90'}`}><path d="M783 310h101l-123-310H643l-89 220-22-220H414L291 310h103l23-60h100l15 60zM520 125l31 82 31-82h-62zM389 125l-63 158-20-44-41-114h-100l170 310h124L741 0H638l-49 125z" /></svg>;
-    const MastercardLogo = () => (
-        <svg className="w-12 h-8" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="18" cy="16" r="10" fill="#EB001B" opacity="0.9" />
-            <circle cx="30" cy="16" r="10" fill="#F79E1B" opacity="0.9" />
-        </svg>
-    );
+import { PocketStatCard } from '../../features/finance/components/PocketStatCard';
 
-    return (
-        <div
-            className="group relative w-full cursor-pointer"
-            style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}
-            onClick={onClick}
-        >
-            <div className={`
-                relative w-full h-full px-5 py-6 rounded-3xl ${textColor} shadow-xl flex flex-col justify-between 
-                bg-gradient-to-br ${gradient} 
-                transition-all duration-300 group-hover:shadow-2xl group-hover:scale-[1.02]
-                overflow-hidden
-                min-h-[200px]
-            `}>
-                {/* Decorative circles - modern mobile UI style */}
-                <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
-                <div className="absolute -right-4 top-12 w-24 h-24 rounded-full bg-white/5"></div>
-                <div className="absolute right-8 top-20 w-16 h-16 rounded-full bg-white/10"></div>
-
-                {/* Card Top */}
-                <div className="relative z-10 flex justify-between items-start mb-6">
-                    <div>
-                        <p className="font-bold text-base mb-0.5">{card.bankName}</p>
-                        <p className="text-xs opacity-70">{card.cardType}</p>
-                    </div>
-                    {card.bankName.toUpperCase() === 'VISA' ? <VisaLogo /> :
-                        card.bankName.toLowerCase().includes('master') ? <MastercardLogo /> :
-                            <ChipIcon />}
-                </div>
-
-                {/* Card Middle - Card Number */}
-                <div className="relative z-10 mb-4">
-                    <p className="text-xl font-mono tracking-[0.15em] mb-3">
-                        {card.lastFourDigits.padStart(4, '0')} •••• •••• {card.lastFourDigits.padStart(4, '0')}
-                    </p>
-                    <p className="text-3xl font-bold tracking-tight">{formatCurrency(card.balance)}</p>
-                </div>
-
-                {/* Card Bottom */}
-                <div className="relative z-10 flex justify-between items-end text-sm">
-                    <div>
-                        <p className="text-xs opacity-60 mb-1">Card Holder</p>
-                        <p className="font-semibold text-sm">{card.cardHolderName}</p>
-                    </div>
-                    {card.expiryDate && (
-                        <div className="text-right">
-                            <p className="text-xs opacity-60 mb-1">Expiry</p>
-                            <p className="font-semibold text-sm">{card.expiryDate}</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Actions on hover */}
-                <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 non-printable z-20">
-                    <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="bg-white/20 hover:bg-white/30 text-white rounded-full p-2 backdrop-blur-sm"><PencilIcon className="w-4 h-4" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="bg-white/20 hover:bg-white/30 text-white rounded-full p-2 backdrop-blur-sm"><Trash2Icon className="w-4 h-4" /></button>
-                </div>
-            </div>
-
-            {connectedPockets.length > 0 && (
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[90%] bg-brand-input p-2 rounded-lg text-xs shadow-md opacity-0 group-hover:opacity-100 group-hover:-bottom-5 transition-all duration-300">
-                    <p className="font-semibold text-brand-text-secondary text-center">Terhubung ke: {connectedPockets.map(p => p.name).join(', ')}</p>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const PocketStatCard: React.FC<{
-    pocket: FinancialPocket;
-    amount: number;
-    sourceCardName?: string | null;
-    progressPercent: number;
-    onClick: () => void;
-    onWithdraw: () => void;
-    onDeposit: () => void;
-    headerActions?: React.ReactNode;
-}> = ({ pocket, amount, sourceCardName, progressPercent, onClick, onWithdraw, onDeposit, headerActions }) => {
-    const gradientByType: Record<string, string> = {
-        [PocketType.SAVING]: 'from-emerald-500 to-teal-500',
-        [PocketType.EXPENSE]: 'from-rose-500 to-pink-500',
-    };
-    const gradient = gradientByType[pocket.type] || 'from-blue-500 to-cyan-500';
-    const progress = Math.max(0, Math.min(progressPercent, 100));
-
-    return (
-        <div className="group relative w-full cursor-pointer" onClick={onClick}>
-            <div className={
-                `relative w-full h-full p-5 rounded-3xl shadow-xl border border-white/10 bg-gradient-to-br ${gradient} overflow-hidden transition-all duration-300 group-hover:shadow-2xl group-hover:scale-[1.01]`
-            }>
-                <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl"></div>
-                <div className="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-black/10 blur-2xl"></div>
-
-                <div className="relative z-10 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className="font-bold text-lg text-white truncate">{pocket.name}</p>
-                        {pocket.description && <p className="text-xs text-white/80 mt-0.5 line-clamp-2">{pocket.description}</p>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {headerActions}
-                        <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white">
-                            {pocketIcons[pocket.icon]}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="relative z-10 mt-4">
-                    <p className="text-3xl font-black tracking-tight text-white">{formatCurrency(amount)}</p>
-                    {pocket.goalAmount ? (
-                        <div className="mt-3">
-                            <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                                <div className="bg-white h-2 rounded-full" style={{ width: `${progress}%` }}></div>
-                            </div>
-                            <p className="text-[11px] text-white/80 mt-1 text-right">Target: {formatCurrency(pocket.goalAmount)}</p>
-                        </div>
-                    ) : null}
-                    {sourceCardName ? <p className="text-[11px] text-white/85 mt-2">Disimpan di: {sourceCardName}</p> : null}
-                </div>
-
-                <div className="relative z-10 flex gap-2 mt-4 pt-4 border-t border-white/15 non-printable">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onWithdraw(); }}
-                        className="flex-1 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-semibold py-2.5 transition-colors"
-                    >
-                        Tarik Dana
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDeposit(); }}
-                        className="flex-1 rounded-xl bg-white text-slate-900 hover:bg-white/90 text-sm font-semibold py-2.5 transition-colors"
-                    >
-                        Setor Dana
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const CashWidget: React.FC<{ card: Card, onTopUp: () => void, onEdit: () => void, onClick: () => void, connectedPockets: FinancialPocket[] }> = ({ card, onTopUp, onEdit, onClick, connectedPockets }) => {
-    return (
-        <div
-            className="group relative w-full cursor-pointer"
-            style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}
-            onClick={onClick}
-        >
-            <div className={`
-                relative w-full h-full px-5 py-6 rounded-3xl text-slate-800 shadow-xl flex flex-col justify-between 
-                bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100
-                transition-all duration-300 group-hover:shadow-2xl group-hover:scale-[1.02]
-                overflow-hidden
-                min-h-[200px]
-            `}>
-                {/* Decorative circles - warm tone for cash */}
-                <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-amber-200/30 blur-2xl"></div>
-                <div className="absolute -right-4 top-12 w-24 h-24 rounded-full bg-orange-200/20"></div>
-                <div className="absolute right-8 top-20 w-16 h-16 rounded-full bg-amber-300/20"></div>
-
-                {/* Top */}
-                <div className="relative z-10 flex justify-between items-start mb-6">
-                    <div>
-                        <p className="font-bold text-base text-amber-900 mb-0.5">{card.bankName}</p>
-                        <p className="text-xs text-amber-700/70">Cash Account</p>
-                    </div>
-                    <div className="bg-amber-200/50 p-2 rounded-full">
-                        <CashIcon className="w-6 h-6 text-amber-700" />
-                    </div>
-                </div>
-
-                {/* Middle */}
-                <div className="relative z-10 mb-4">
-                    <p className="text-sm text-amber-700/80 mb-2">Available Balance</p>
-                    <p className="text-3xl font-bold tracking-tight text-amber-900">{formatCurrency(card.balance)}</p>
-                </div>
-
-                {/* Bottom */}
-                <div className="relative z-10 text-sm">
-                    <p className="text-xs text-amber-700/60 mb-1">Account Holder</p>
-                    <p className="font-semibold text-sm text-amber-900">{card.cardHolderName}</p>
-                </div>
-
-                {/* Actions on hover */}
-                <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 non-printable z-20">
-                    <button onClick={(e) => { e.stopPropagation(); onTopUp(); }} className="bg-amber-900/10 hover:bg-amber-900/20 text-amber-900 rounded-full p-2 backdrop-blur-sm" title="Top-up Tunai"><ArrowUpIcon className="w-4 h-4" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="bg-amber-900/10 hover:bg-amber-900/20 text-amber-900 rounded-full p-2 backdrop-blur-sm" title="Edit"><PencilIcon className="w-4 h-4" /></button>
-                </div>
-            </div>
-
-            {connectedPockets.length > 0 && (
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[90%] bg-brand-input p-2 rounded-lg text-xs shadow-md opacity-0 group-hover:opacity-100 group-hover:-bottom-5 transition-all duration-300">
-                    <p className="font-semibold text-brand-text-secondary text-center">Terhubung ke: {connectedPockets.map(p => p.name).join(', ')}</p>
-                </div>
-            )}
-        </div>
-    );
-};
+import { CashWidget } from '../../features/finance/components/CashWidget';
 
 interface FinanceProps {
     transactions: Transaction[];
@@ -328,25 +70,7 @@ const getMonthDateRange = (date: Date) => {
     };
 };
 
-const TransactionTable: React.FC<{ transactions: Transaction[] }> = ({ transactions }) => {
-    if (transactions.length === 0) return <p className="text-center py-10 text-brand-text-secondary">Tidak ada transaksi pada periode ini.</p>;
-    return (
-        <table className="w-full text-sm">
-            <thead className="text-xs uppercase print-bg-slate bg-brand-input"><tr className="print-text-black"><th className="p-3 text-left">ID Transaksi</th><th className="p-3 text-left">Tanggal</th><th className="p-3 text-left">Deskripsi</th><th className="p-3 text-left">Kategori</th><th className="p-3 text-right">Jumlah</th></tr></thead>
-            <tbody className="divide-y divide-brand-border">
-                {transactions.map((t, idx) => (
-                    <tr key={`${t.id || 'no-id'}-${idx}`}>
-                        <td className="p-3 font-mono text-xs">{t.id}</td>
-                        <td className="p-3">{new Date(t.date).toLocaleDateString('id-ID')}</td>
-                        <td className="p-3 font-semibold">{t.description}</td>
-                        <td className="p-3">{t.category}</td>
-                        <td className={`p-3 text-right font-semibold ${t.type === TransactionType.INCOME ? 'print-text-green text-brand-success' : 'print-text-red text-brand-danger'}`}>{formatCurrency(t.amount)}</td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-    );
-}
+import TransactionTable from '../../features/finance/components/TransactionTable';
 
 const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pockets, setPockets, projects, setProjects, profile, cards, setCards, teamMembers }) => {
     const [activeTab, setActiveTab] = useState<'transactions' | 'pockets' | 'cards' | 'cashflow' | 'laporan' | 'laporanKartu' | 'labaAcara Pernikahan'>('transactions');
@@ -681,9 +405,13 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                 .filter(t => t.type === TransactionType.EXPENSE && PRODUCTION_COST_CATEGORIES.includes(t.category))
                 .reduce((sum, t) => sum + t.amount, 0);
 
-            const totalPackageRevenue = clientProjectsInMonth.reduce((sum, p) => sum + (p.totalCost - (p.customCosts?.reduce((s, c) => s + c.amount, 0) || 0) - (Number(p.transportCost) || 0)), 0);
             const totalCustomCosts = clientProjectsInMonth.reduce((sum, p) => sum + (p.customCosts?.reduce((s, c) => s + c.amount, 0) || 0), 0);
-            const totalTransportCosts = clientProjectsInMonth.reduce((sum, p) => sum + (Number(p.transportCost) || 0), 0);
+            // Hitung Transport dari transaksi aktual berkategori Transport/Transportasi
+            const totalTransportCosts = relevantTransactions
+                .filter(t => t.type === TransactionType.EXPENSE && (t.category === 'Transport' || t.category === 'Transportasi'))
+                .reduce((sum, t) => sum + t.amount, 0);
+            // Harga package = total tagihan dikurangi biaya tambahan dan transport
+            const totalPackageRevenue = clientProjectsInMonth.reduce((sum, p) => sum + (p.totalCost - (p.customCosts?.reduce((s, c) => s + c.amount, 0) || 0)), 0) - totalTransportCosts;
 
             const profit = totalIncome - totalCost;
 
@@ -1394,7 +1122,7 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
     };
 
     const handleDownloadProfitReportCSV = () => {
-        const headers = ['ID Pengantin', 'Nama Pengantin', 'Total Pemasukan', 'Total Biaya Produksi', 'Laba Kotor'];
+        const headers = ['ID Pengantin', 'Nama Pengantin', 'Total Pemasukan', 'Total Biaya Produksi', 'Laba Bersih'];
         const data = projectProfitabilityData.map(d => [
             d!.clientId,
             d!.clientName,
@@ -1619,6 +1347,14 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
             case 'cards':
                 return (
                     <div className="widget-animate space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gradient flex items-center gap-2">
+                                <CreditCardIcon className="w-6 h-6" /> Kartu Saya
+                            </h3>
+                            <button onClick={() => handleOpenModal('card', 'add')} className="button-secondary inline-flex items-center gap-2">
+                                <PlusIcon className="w-4 h-4" /> Tambah Kartu
+                            </button>
+                        </div>
                         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                             <StatCard icon={<CreditCardIcon className="w-6 h-6" />} title="Total Utang Kartu Kredit" value={formatCurrency(Math.abs(cardStats.creditDebt))} subtitle="Saldo negatif kartu kredit" colorVariant="pink" />
                             <StatCard icon={<DollarSignIcon className="w-6 h-6" />} title="Total Aset (Debit & Tunai)" value={formatCurrency(cardStats.debitAndCashAssets)} subtitle="Saldo kartu debit & kas" colorVariant="green" />
@@ -1860,7 +1596,7 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                                                 <th className="p-3 text-right">Total Tagihan</th>
                                                 <th className="p-3 text-right">Total Terbayar</th>
                                                 <th className="p-3 text-right">Biaya Produksi</th>
-                                                <th className="p-3 text-right">Laba Kotor</th>
+                                                <th className="p-3 text-right">Laba Bersih</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-brand-border">
@@ -1966,7 +1702,7 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 StatCard-container">
                     <StatCard icon={<ArrowUpIcon className="w-6 h-6" />} title="Total Pemasukan" value={formatCurrency(totalIncome)} iconBgColor="bg-brand-success/20" iconColor="text-brand-success" />
                     <StatCard icon={<ArrowDownIcon className="w-6 h-6" />} title="Total Biaya Produksi" value={formatCurrency(totalCost)} iconBgColor="bg-brand-danger/20" iconColor="text-brand-danger" />
-                    <StatCard icon={<DollarSignIcon className="w-6 h-6" />} title="Laba Kotor" value={formatCurrency(profit)} />
+                    <StatCard icon={<DollarSignIcon className="w-6 h-6" />} title="Laba Bersih" value={formatCurrency(profit)} />
                 </div>
 
                 {/* Project Breakdown Section */}
@@ -2111,39 +1847,6 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                     <StatCard icon={<ArrowDownIcon className="w-6 h-6" />} title="Pengeluaran Bulan Ini" value={formatCurrency(summary.totalExpenseThisMonth)} subtitle="Total pengeluaran yang tercatat bulan ini." />
                 </div>
             </div>
-            {/* Card Saya - selalu tampil untuk mempermudah melihat kartu */}
-            <div className="widget-animate non-printable" style={{ animationDelay: '450ms' }}>
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold text-gradient flex items-center gap-2">
-                        <CreditCardIcon className="w-5 h-5" /> Card Saya
-                    </h3>
-                    <button onClick={() => setActiveTab('cards')} className="text-sm font-semibold text-brand-accent hover:underline">
-                        Kelola Kartu &rarr;
-                    </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 overflow-x-auto pb-2">
-                    {cards.map(card => {
-                        const connectedPockets = pockets.filter(p => p.sourceCardId === card.id);
-                        return (
-                            <div key={card.id} className="min-w-[280px] max-w-full">
-                                {card.cardType === CardType.TUNAI
-                                    ? <CashWidget card={card} onClick={() => setHistoryModalState({ type: 'card', item: card })} onTopUp={() => handleOpenModal('topup-cash', 'add')} onEdit={() => handleOpenModal('card', 'edit', card)} connectedPockets={connectedPockets} />
-                                    : <CardWidget card={card} onEdit={() => handleOpenModal('card', 'edit', card)} onDelete={() => handleDelete('card', card.id)} onClick={() => setHistoryModalState({ type: 'card', item: card })} connectedPockets={connectedPockets} />
-                                }
-                            </div>
-                        );
-                    })}
-                    <button onClick={() => handleOpenModal('card', 'add')} className="min-w-[280px] border-2 border-dashed border-brand-border rounded-2xl flex flex-col items-center justify-center text-brand-text-secondary hover:bg-brand-input hover:border-brand-accent hover:text-brand-accent transition-all duration-300 min-h-[200px]">
-                        <div className="w-14 h-14 rounded-full bg-brand-bg flex items-center justify-center">
-                            <PlusIcon className="w-7 h-7" />
-                        </div>
-                        <span className="mt-3 font-semibold text-sm">Tambah Kartu / Akun</span>
-                    </button>
-                </div>
-                {cards.length === 0 && (
-                    <p className="text-center py-4 text-brand-text-secondary text-sm">Belum ada kartu/akun. Klik &quot;Tambah Kartu / Akun&quot; untuk mulai.</p>
-                )}
-            </div>
             {/* Desktop Tab Navigation */}
             <div className="hidden md:block border-b border-brand-border non-printable widget-animate" style={{ animationDelay: '500ms' }}>
                 <nav className="-mb-px flex space-x-6 overflow-x-auto">
@@ -2241,18 +1944,18 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                                             return pDate.getFullYear() === parseInt(fYear) && (pDate.getMonth() + 1) === parseInt(fMonth);
                                         })
                                         .map(p => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.projectName} ({p.clientName})
-                                        </option>
-                                    ))}
+                                            <option key={p.id} value={p.id}>
+                                                {p.projectName} ({p.clientName})
+                                            </option>
+                                        ))}
                                 </select>
                                 <label htmlFor="projectId" className="input-label">Terkait Proyek (Opsional)</label>
                             </div>
                             <div className="w-1/3 relative">
-                                <input 
-                                    type="month" 
-                                    value={transactionProjectMonthFilter} 
-                                    onChange={(e) => setTransactionProjectMonthFilter(e.target.value)} 
+                                <input
+                                    type="month"
+                                    value={transactionProjectMonthFilter}
+                                    onChange={(e) => setTransactionProjectMonthFilter(e.target.value)}
                                     className="input-field text-sm p-2 h-full"
                                     title="Filter Bulan Proyek"
                                 />
@@ -2399,50 +2102,50 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                 <div>
                     <div className="overflow-y-auto max-h-[60vh]">
 
-                            <table className="w-full text-sm">
-                                <thead className="text-xs text-brand-text-secondary uppercase">
-                                    <tr>
-                                        <th className="p-3 text-left">Tanggal</th>
-                                        <th className="p-3 text-left">Deskripsi</th>
-                                        <th className="p-3 text-left">Sumber/Tujuan</th>
-                                        <th className="p-3 text-right">Jumlah</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-brand-border">
-                                    {transactions
-                                        .filter(t => (historyModalState.type === 'card' && t.cardId === historyModalState.item?.id) || (historyModalState.type === 'pocket' && t.pocketId === historyModalState.item?.id))
-                                        .map(t => {
-                                            const card = cards.find(c => c.id === t.cardId);
-                                            let sourceDestText = '';
-                                            if (t.category.includes('Transfer') || t.category.includes('Penutupan')) {
-                                                if (t.description.includes('Setor ke')) {
-                                                    sourceDestText = `Dari: ${card?.bankName || 'N/A'}`;
-                                                } else if (t.description.includes('Tarik dari')) {
-                                                    sourceDestText = `Ke: ${card?.bankName || 'N/A'}`;
-                                                } else {
-                                                    sourceDestText = 'Sistem Internal';
-                                                }
-                                            } else if (t.type === TransactionType.INCOME) {
-                                                sourceDestText = `Ke: ${card?.bankName || 'N/A'}`;
-                                            } else if (t.type === TransactionType.EXPENSE) {
+                        <table className="w-full text-sm">
+                            <thead className="text-xs text-brand-text-secondary uppercase">
+                                <tr>
+                                    <th className="p-3 text-left">Tanggal</th>
+                                    <th className="p-3 text-left">Deskripsi</th>
+                                    <th className="p-3 text-left">Sumber/Tujuan</th>
+                                    <th className="p-3 text-right">Jumlah</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-brand-border">
+                                {transactions
+                                    .filter(t => (historyModalState.type === 'card' && t.cardId === historyModalState.item?.id) || (historyModalState.type === 'pocket' && t.pocketId === historyModalState.item?.id))
+                                    .map(t => {
+                                        const card = cards.find(c => c.id === t.cardId);
+                                        let sourceDestText = '';
+                                        if (t.category.includes('Transfer') || t.category.includes('Penutupan')) {
+                                            if (t.description.includes('Setor ke')) {
                                                 sourceDestText = `Dari: ${card?.bankName || 'N/A'}`;
+                                            } else if (t.description.includes('Tarik dari')) {
+                                                sourceDestText = `Ke: ${card?.bankName || 'N/A'}`;
+                                            } else {
+                                                sourceDestText = 'Sistem Internal';
                                             }
-                                            return (
-                                                <tr key={t.id} className="hover:bg-brand-bg">
-                                                    <td className="p-3">{new Date(t.date).toLocaleDateString('id-ID')}</td>
-                                                    <td className="p-3 font-semibold text-brand-text-light">{t.description}</td>
-                                                    <td className="p-3 text-brand-text-secondary">{sourceDestText}</td>
-                                                    <td className={`p-3 text-right font-semibold ${t.type === TransactionType.INCOME ? 'text-brand-success' : 'text-brand-danger'}`}>
-                                                        {t.type === TransactionType.EXPENSE ? '-' : ''}{formatCurrency(t.amount)}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    {transactions.filter(t => (historyModalState.type === 'card' && t.cardId === historyModalState.item?.id) || (historyModalState.type === 'pocket' && t.pocketId === historyModalState.item?.id)).length === 0 &&
-                                        <tr><td colSpan={4} className="text-center p-8 text-brand-text-secondary">Tidak ada riwayat transaksi.</td></tr>
-                                    }
-                                </tbody>
-                            </table>
+                                        } else if (t.type === TransactionType.INCOME) {
+                                            sourceDestText = `Ke: ${card?.bankName || 'N/A'}`;
+                                        } else if (t.type === TransactionType.EXPENSE) {
+                                            sourceDestText = `Dari: ${card?.bankName || 'N/A'}`;
+                                        }
+                                        return (
+                                            <tr key={t.id} className="hover:bg-brand-bg">
+                                                <td className="p-3">{new Date(t.date).toLocaleDateString('id-ID')}</td>
+                                                <td className="p-3 font-semibold text-brand-text-light">{t.description}</td>
+                                                <td className="p-3 text-brand-text-secondary">{sourceDestText}</td>
+                                                <td className={`p-3 text-right font-semibold ${t.type === TransactionType.INCOME ? 'text-brand-success' : 'text-brand-danger'}`}>
+                                                    {t.type === TransactionType.EXPENSE ? '-' : ''}{formatCurrency(t.amount)}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                {transactions.filter(t => (historyModalState.type === 'card' && t.cardId === historyModalState.item?.id) || (historyModalState.type === 'pocket' && t.pocketId === historyModalState.item?.id)).length === 0 &&
+                                    <tr><td colSpan={4} className="text-center p-8 text-brand-text-secondary">Tidak ada riwayat transaksi.</td></tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </Modal>}
