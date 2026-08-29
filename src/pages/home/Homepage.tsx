@@ -74,8 +74,8 @@ const Homepage: React.FC = () => {
             <section className="py-20 px-6 bg-brand-bg">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-brand-text-light">Akses Cepat</h2>
-                        <p className="text-brand-text-secondary mt-2">Navigasi langsung ke berbagai fitur aplikasi</p>
+                        <h2 className="text-3xl font-bold text-brand-text-light">Fitur Aplikasi INI </h2>
+                        <p className="text-brand-text-secondary mt-2">Klik di Bawah untuk melihat</p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         <NavigationCard
@@ -167,9 +167,11 @@ const Homepage: React.FC = () => {
                     <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl border border-brand-border">
                         <iframe
                             className="absolute inset-0 w-full h-full"
-                            src="https://www.youtube.com/embed/nI5-kTIIiGk"
+                            src="https://www.youtube.com/embed/aAH3CWTKQq8"
                             title="weddfin Tutorial Video"
+                            frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
                             allowFullScreen
                         />
                     </div>
