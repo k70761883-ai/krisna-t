@@ -1,9 +1,11 @@
 import { supabase } from '../lib/supabaseClient';
 import { VendorPortfolio, PortfolioImage } from '../types';
+import { useAppStore } from '../store/useAppStore';
 
 export const createVendorPortfolio = async (portfolioData: Omit<VendorPortfolio, 'id' | 'created_at' | 'updated_at'>): Promise<VendorPortfolio> => {
     // Ensure user_id is set
-    const userId = portfolioData.user_id || '11111111-1111-1111-1111-111111111111';
+    const currentUser = useAppStore.getState().currentUser;
+    const userId = portfolioData.user_id || currentUser?.id || '11111111-1111-1111-1111-111111111111';
 
     const payload = { ...portfolioData, user_id: userId };
 

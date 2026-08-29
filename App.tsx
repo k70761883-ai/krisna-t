@@ -381,10 +381,21 @@ function App() {
   // --- State Initialization with Persistence ---
   const [users, setUsers] = React.useState<User[]>([]);
 
-  const [clients, setClients] = React.useState<Client[]>([]);
-  const [projects, setProjects] = React.useState<Project[]>([]);
-  const [teamMembers, setTeamMembers] = React.useState<TeamMember[]>([]);
-  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const {
+    clients, setClients,
+    projects, setProjects,
+    teamMembers, setTeamMembers,
+    transactions, setTransactions,
+    leads, setLeads,
+    cards, setCards,
+    pockets, setPockets,
+    packages, setPackages,
+    addOns, setAddOns,
+    clientFeedback, setClientFeedback,
+    totals,
+    appData
+  } = useData();
+
   const [teamProjectPayments, setTeamProjectPayments] = React.useState<
     TeamProjectPayment[]
   >([]);
@@ -392,47 +403,14 @@ function App() {
   const [teamPaymentRecords, setTeamPaymentRecords] = React.useState<
     TeamPaymentRecord[]
   >([]);
-  const [pockets, setPockets] = React.useState<FinancialPocket[]>([]);
   // Inisialisasi profile tanpa MOCK; isi dari Supabase pada efek load profile
   const [profile, setProfile] = React.useState<Profile>({
     projectTypes: [],
     projectStatusConfig: [],
     eventTypes: [],
   } as unknown as Profile);
-  const [leads, setLeads] = React.useState<Lead[]>([]);
-  const [cards, setCards] = React.useState<Card[]>([]);
-  const [clientFeedback, setClientFeedback] = React.useState<ClientFeedback[]>([]);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [promoCodes, setPromoCodes] = React.useState<PromoCode[]>([]);
-  const [packages, setPackages] = React.useState<Package[]>([]);
-  const [addOns, setAddOns] = React.useState<AddOn[]>([]);
-
-  // --- Lazy Data Loading Hook ---
-  const appData = useAppData();
-
-  React.useEffect(() => {
-    if (appData.loaded.clients) setClients(appData.clients);
-  }, [appData.clients, appData.loaded.clients]);
-
-  React.useEffect(() => {
-    if (appData.loaded.projects) setProjects(appData.projects as any);
-  }, [appData.projects, appData.loaded.projects]);
-
-  React.useEffect(() => {
-    if (appData.loaded.teamMembers) setTeamMembers(appData.teamMembers);
-  }, [appData.teamMembers, appData.loaded.teamMembers]);
-
-  React.useEffect(() => {
-    if (appData.loaded.transactions) setTransactions(appData.transactions);
-  }, [appData.transactions, appData.loaded.transactions]);
-
-  React.useEffect(() => {
-    if (appData.loaded.leads) setLeads(appData.leads);
-  }, [appData.leads, appData.loaded.leads]);
-
-  React.useEffect(() => {
-    if (appData.loaded.clientFeedback) setClientFeedback(appData.clientFeedback);
-  }, [appData.clientFeedback, appData.loaded.clientFeedback]);
 
   // --- [NEW] CENTRALIZED NOTIFICATION HANDLER ---
   const addNotification = async (

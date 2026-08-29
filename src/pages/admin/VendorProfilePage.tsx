@@ -18,6 +18,7 @@ interface EditPortfolioModalProps {
 const EditPortfolioModal: React.FC<EditPortfolioModalProps> = ({ portfolio, onClose, onUpdated }) => {
   const [title, setTitle] = useState(portfolio.title);
   const [category, setCategory] = useState(portfolio.category);
+  const [youtubeUrl, setYoutubeUrl] = useState(portfolio.youtube_url || '');
   const [images, setImages] = useState<PortfolioImage[]>(portfolio.images || []);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -26,7 +27,7 @@ const EditPortfolioModal: React.FC<EditPortfolioModalProps> = ({ portfolio, onCl
     e.preventDefault();
     try {
       setSaving(true);
-      const updated = await updateVendorPortfolio(portfolio.id, { title, category, images });
+      const updated = await updateVendorPortfolio(portfolio.id, { title, category, images, youtube_url: youtubeUrl });
       onUpdated(updated);
       onClose();
     } catch {
@@ -77,6 +78,14 @@ const EditPortfolioModal: React.FC<EditPortfolioModalProps> = ({ portfolio, onCl
               placeholder="Contoh: Prewedding, Wedding..."
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-brand-text-secondary mb-1">Link Video YouTube (Opsional)</label>
+          <input
+            type="text" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl bg-brand-input border border-brand-border focus:ring-2 focus:ring-brand-accent outline-none"
+            placeholder="Contoh: https://www.youtube.com/watch?v=..."
+          />
         </div>
 
         {/* Photos */}
@@ -140,7 +149,7 @@ const VendorProfilePage: React.FC = () => {
   const [message, setMessage] = useState('');
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newPortfolio, setNewPortfolio] = useState({ title: '', category: '' });
+  const [newPortfolio, setNewPortfolio] = useState({ title: '', category: '', youtube_url: '' });
   const [isCreatingPortfolio, setIsCreatingPortfolio] = useState(false);
   const [uploadingPortfolioId, setUploadingPortfolioId] = useState<string | null>(null);
   const [editingPortfolio, setEditingPortfolio] = useState<VendorPortfolio | null>(null);
@@ -192,11 +201,12 @@ const VendorProfilePage: React.FC = () => {
       const created = await createVendorPortfolio({
         title: newPortfolio.title.trim(),
         category: newPortfolio.category.trim(),
+        youtube_url: newPortfolio.youtube_url.trim(),
         images: []
       } as any);
       setPortfolios([created, ...portfolios]);
       setIsCreateModalOpen(false);
-      setNewPortfolio({ title: '', category: '' });
+      setNewPortfolio({ title: '', category: '', youtube_url: '' });
     } catch (err: any) {
       alert(err?.message || 'Gagal membuat portofolio');
     } finally {
@@ -416,6 +426,12 @@ const VendorProfilePage: React.FC = () => {
             <input type="text" required value={newPortfolio.category} onChange={e => setNewPortfolio({ ...newPortfolio, category: e.target.value })}
               className="w-full px-4 py-2 rounded-xl bg-brand-input border border-brand-border focus:ring-2 focus:ring-brand-accent outline-none"
               placeholder="Contoh: Prewedding / Wedding / Engagement" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Link Video YouTube (Opsional)</label>
+            <input type="text" value={newPortfolio.youtube_url} onChange={e => setNewPortfolio({ ...newPortfolio, youtube_url: e.target.value })}
+              className="w-full px-4 py-2 rounded-xl bg-brand-input border border-brand-border focus:ring-2 focus:ring-brand-accent outline-none"
+              placeholder="Contoh: https://www.youtube.com/watch?v=..." />
           </div>
           <div className="flex gap-3 pt-4 border-t border-brand-border">
             <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold">Batal</button>

@@ -6,6 +6,17 @@ import { listCards } from '../services/cards';
 import { listPockets } from '../services/pockets';
 import { listPackages } from '../services/packages';
 import { listAddOns } from '../services/addOns';
+import {
+    useClientsQuery,
+    useProjectsQuery,
+    useTeamMembersQuery,
+    useTransactionsQuery,
+    useLeadsQuery,
+    useCardsQuery,
+    usePocketsQuery,
+    usePackagesQuery,
+    useAddOnsQuery
+} from '../hooks/queries';
 
 interface DataContextType {
     clients: Client[];
@@ -38,6 +49,17 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const appData = useAppData();
 
+    // Use React Query hooks
+    const { data: qClients = [] } = useClientsQuery();
+    const { data: qProjects = [] } = useProjectsQuery();
+    const { data: qTeamMembers = [] } = useTeamMembersQuery();
+    const { data: qTransactions = [] } = useTransactionsQuery();
+    const { data: qLeads = [] } = useLeadsQuery();
+    const { data: qCards = [] } = useCardsQuery();
+    const { data: qPockets = [] } = usePocketsQuery();
+    const { data: qPackages = [] } = usePackagesQuery();
+    const { data: qAddOns = [] } = useAddOnsQuery();
+
     const [clients, setClients] = useState<Client[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -52,26 +74,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isInitialized = useRef(false);
 
     const loadAllData = () => {
-        appData.loadClients();
-        appData.loadProjects();
-        appData.loadTransactions();
-        appData.loadTeamMembers();
-        appData.loadLeads();
-        appData.loadClientFeedback();
+        // We still call appData.loadTotals() if it's used elsewhere, 
+        // but other data is managed by React Query now.
         appData.loadTotals();
-
-        if (!isInitialized.current) {
-            listCards().then((res: any) => setCards(res.map(mapCardRowToCard))).catch(console.error);
-            listPockets().then((res: any) => setPockets(res)).catch(console.error);
-            listPackages().then((res: any) => setPackages(res)).catch(console.error);
-            listAddOns().then((res: any) => setAddOns(res)).catch(console.error);
-            isInitialized.current = true;
-        }
+        appData.loadClientFeedback();
     };
 
     useEffect(() => {
         loadAllData();
     }, []);
+
+    // Sync from React Query to local state for Realtime compatibility
+    useEffect(() => { setClients(qClients); }, [qClients]);
+    useEffect(() => { setProjects(qProjects as any); }, [qProjects]);
+    useEffect(() => { setTeamMembers(qTeamMembers); }, [qTeamMembers]);
+    useEffect(() => { setTransactions(qTransactions); }, [qTransactions]);
+    useEffect(() => { setLeads(qLeads); }, [qLeads]);
+    useEffect(() => { setCards(qCards); }, [qCards]);
+    useEffect(() => { setPockets(qPockets); }, [qPockets]);
+    useEffect(() => { setPackages(qPackages); }, [qPackages]);
+    useEffect(() => { setAddOns(qAddOns); }, [qAddOns]);
 
     // Helper for cards
     const mapCardRowToCard = (row: any): Card => ({
@@ -84,14 +106,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         balance: Number(row.balance || 0),
         colorGradient: row.color_gradient || "from-slate-200 to-slate-400",
     });
-
-    // Sync from appData
-    useEffect(() => { if (appData.loaded.clients) setClients(appData.clients); }, [appData.clients, appData.loaded.clients]);
-    useEffect(() => { if (appData.loaded.projects) setProjects(appData.projects as any); }, [appData.projects, appData.loaded.projects]);
-    useEffect(() => { if (appData.loaded.teamMembers) setTeamMembers(appData.teamMembers); }, [appData.teamMembers, appData.loaded.teamMembers]);
-    useEffect(() => { if (appData.loaded.transactions) setTransactions(appData.transactions); }, [appData.transactions, appData.loaded.transactions]);
-    useEffect(() => { if (appData.loaded.leads) setLeads(appData.leads); }, [appData.leads, appData.loaded.leads]);
-    useEffect(() => { if (appData.loaded.clientFeedback) setClientFeedback(appData.clientFeedback); }, [appData.clientFeedback, appData.loaded.clientFeedback]);
 
     // Realtime Subscriptions
     useEffect(() => {

@@ -49,8 +49,13 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules')) {
               if (id.includes('@supabase')) return 'vendor-supabase';
               if (id.includes('react-dom')) return 'vendor-react-dom';
-              if (id.includes('react')) return 'vendor-react';
+              if (id.includes('react/') || id === '\x00commonjsHelpers.js' || id.includes('node_modules/react/')) return 'vendor-react';
               if (id.includes('lucide-react')) return 'vendor-lucide';
+              if (id.includes('html2pdf.js')) return 'vendor-html2pdf';
+              if (id.includes('@tanstack')) return 'vendor-react-query';
+              if (id.includes('zustand')) return 'vendor-zustand';
+              if (id.includes('@capacitor')) return 'vendor-capacitor';
+              if (id.includes('qrcode.react')) return 'vendor-qrcode';
               return 'vendor-others';
 
             }

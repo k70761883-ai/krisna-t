@@ -125,6 +125,7 @@ export interface VendorPortfolio {
   title: string;
   category: string;
   cover_image_url?: string;
+  youtube_url?: string;
   images: PortfolioImage[];
   created_at: string;
   updated_at?: string;
