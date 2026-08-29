@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appName: 'weddfin',
   webDir: 'dist',
   server: {
-    url: 'https://weddfin.netlify.app',
-    cleartext: true
+    url: 'https://keuanganvendor.netlify.app',
+    cleartext: false
   }
 };
 

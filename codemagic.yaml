@@ -10,7 +10,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-      node: 18.17.0
+      node: 20.17.0
       xcode: latest
       cocoapods: default
     scripts:
@@ -59,7 +59,7 @@ workflows:
         - google_play
       vars:
         PACKAGE_NAME: "com.venapictures.app"
-      node: 18.17.0
+      node: 20.17.0
       java: 17
     scripts:
       - name: Install dependencies
