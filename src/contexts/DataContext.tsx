@@ -71,10 +71,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [addOns, setAddOns] = useState<AddOn[]>([]);
     const [clientFeedback, setClientFeedback] = useState<ClientFeedback[]>([]);
 
-    const isInitialized = useRef(false);
+    // Refs to track previous serialized values so we only update state when data truly changes
+    const prevClients = useRef<string>('');
+    const prevProjects = useRef<string>('');
+    const prevTeamMembers = useRef<string>('');
+    const prevTransactions = useRef<string>('');
+    const prevLeads = useRef<string>('');
+    const prevCards = useRef<string>('');
+    const prevPockets = useRef<string>('');
+    const prevPackages = useRef<string>('');
+    const prevAddOns = useRef<string>('');
 
     const loadAllData = () => {
-        // We still call appData.loadTotals() if it's used elsewhere, 
+        // We still call appData.loadTotals() if it's used elsewhere,
         // but other data is managed by React Query now.
         appData.loadTotals();
         appData.loadClientFeedback();
@@ -84,16 +93,81 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadAllData();
     }, []);
 
-    // Sync from React Query to local state for Realtime compatibility
-    useEffect(() => { setClients(qClients); }, [qClients]);
-    useEffect(() => { setProjects(qProjects as any); }, [qProjects]);
-    useEffect(() => { setTeamMembers(qTeamMembers); }, [qTeamMembers]);
-    useEffect(() => { setTransactions(qTransactions); }, [qTransactions]);
-    useEffect(() => { setLeads(qLeads); }, [qLeads]);
-    useEffect(() => { setCards(qCards); }, [qCards]);
-    useEffect(() => { setPockets(qPockets); }, [qPockets]);
-    useEffect(() => { setPackages(qPackages); }, [qPackages]);
-    useEffect(() => { setAddOns(qAddOns); }, [qAddOns]);
+    // Sync from React Query to local state for Realtime compatibility.
+    // We guard with a serialized comparison so that even if React Query
+    // returns a new array reference the setState is only called when the
+    // actual content has changed, preventing infinite re-render loops.
+    useEffect(() => {
+        const serialized = JSON.stringify(qClients);
+        if (serialized !== prevClients.current) {
+            prevClients.current = serialized;
+            setClients(qClients);
+        }
+    }, [qClients]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qProjects);
+        if (serialized !== prevProjects.current) {
+            prevProjects.current = serialized;
+            setProjects(qProjects as any);
+        }
+    }, [qProjects]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qTeamMembers);
+        if (serialized !== prevTeamMembers.current) {
+            prevTeamMembers.current = serialized;
+            setTeamMembers(qTeamMembers);
+        }
+    }, [qTeamMembers]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qTransactions);
+        if (serialized !== prevTransactions.current) {
+            prevTransactions.current = serialized;
+            setTransactions(qTransactions);
+        }
+    }, [qTransactions]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qLeads);
+        if (serialized !== prevLeads.current) {
+            prevLeads.current = serialized;
+            setLeads(qLeads);
+        }
+    }, [qLeads]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qCards);
+        if (serialized !== prevCards.current) {
+            prevCards.current = serialized;
+            setCards(qCards);
+        }
+    }, [qCards]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qPockets);
+        if (serialized !== prevPockets.current) {
+            prevPockets.current = serialized;
+            setPockets(qPockets);
+        }
+    }, [qPockets]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qPackages);
+        if (serialized !== prevPackages.current) {
+            prevPackages.current = serialized;
+            setPackages(qPackages);
+        }
+    }, [qPackages]);
+
+    useEffect(() => {
+        const serialized = JSON.stringify(qAddOns);
+        if (serialized !== prevAddOns.current) {
+            prevAddOns.current = serialized;
+            setAddOns(qAddOns);
+        }
+    }, [qAddOns]);
 
     // Helper for cards
     const mapCardRowToCard = (row: any): Card => ({

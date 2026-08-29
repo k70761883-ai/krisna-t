@@ -13,7 +13,7 @@ const FeatureCard: React.FC<{ title: string; description: string; icon: React.Re
 );
 
 const NavigationCard: React.FC<{ title: string; description: string; link: string; icon: React.ReactNode }> = ({ title, description, link, icon }) => (
-    <div 
+    <div
         className="bg-brand-surface p-6 rounded-2xl shadow-lg border border-brand-border hover:border-brand-accent/50 transition-all duration-200 cursor-pointer group"
         onClick={() => window.location.href = link}
     >
@@ -81,7 +81,7 @@ const Homepage: React.FC = () => {
                         <NavigationCard
                             title="Booking Publik"
                             description="Portal booking untuk calon pengantin wilayah Banten"
-                            link="https://keuanganvendor.netlify.app/#/public-booking?region=banten"
+                            link="https://keuanganvendor.netlify.app//#/public-booking?region=jabodetabek"
                             icon={<CalendarIcon className="w-6 h-6" />}
                         />
                         <NavigationCard
@@ -93,13 +93,13 @@ const Homepage: React.FC = () => {
                         <NavigationCard
                             title="Portal Klien"
                             description="Dashboard khusus untuk klien mengecek progres proyek"
-                            link="https://keuanganvendor.netlify.app/#/portal/82697935-7613-44e4-a867-92ae885a46cc"
+                            link="https://keuanganvendor.netlify.app/#/portal/e87dae9c-5d81-4046-815f-50485b8f3b89"
                             icon={<HomeIcon className="w-6 h-6" />}
                         />
                         <NavigationCard
                             title="Freelancer Portal"
                             description="Area kerja untuk freelancer dan vendor eksternal"
-                            link="https://keuanganvendor.netlify.app/#/freelancer-portal/67e30320-d753-4cb7-9adc-9bd0d195dbff"
+                            link="https://keuanganvendor.netlify.app/#/freelancer-portal/581d5995-7f0f-484a-b564-f1510db736fc"
                             icon={<BriefcaseIcon className="w-6 h-6" />}
                         />
                         <NavigationCard
@@ -111,13 +111,13 @@ const Homepage: React.FC = () => {
                         <NavigationCard
                             title="Profil Pengguna"
                             description="Kelola profil dan pengaturan akun Anda"
-                            link="https://keuanganvendor.netlify.app/#/profile"
+                            link="Laba Bersih#/profile"
                             icon={<UsersIcon className="w-6 h-6" />}
                         />
                         <NavigationCard
                             title="Invoice PDF"
                             description="Lihat dan download invoice dalam format PDF"
-                            link="https://keuanganvendor.netlify.app/#/portal/invoice/8c1dcc1d-d5b6-44a6-848f-c9df72b45141"
+                            link="https://keuanganvendor.netlify.app/#/portal/invoice/dc202cfb-8674-4850-a5d1-52c6192c9ec7"
                             icon={<FileTextIcon className="w-6 h-6" />}
                         />
                         <NavigationCard
@@ -188,9 +188,9 @@ const Homepage: React.FC = () => {
                             {/* Profile Photo */}
                             <div className="flex-shrink-0">
                                 <div className="w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-xl border-4 border-brand-accent/20">
-                                    <img 
-                                        src="/assets/images/nopian-hadi.jpg" 
-                                        alt="Nopian Hadi" 
+                                    <img
+                                        src="/assets/images/nopian-hadi.jpg"
+                                        alt="Nopian Hadi"
                                         className="w-full h-full object-cover"
                                         width="192"
                                         height="192"
@@ -205,11 +205,11 @@ const Homepage: React.FC = () => {
                                     Web Developer | Content & Social Media Designer | Video Editor
                                 </p>
                                 <p className="text-brand-text-secondary mb-6 leading-relaxed">
-                                    Seorang profesional kreatif yang passionate dalam Web Development, Desain Konten Medsos & Desain, serta Video Editing. 
-                                    Saya fokus pada pembuatan solusi digital komprehensif yang tidak hanya terlihat bagus secara visual, tetapi juga berfungsi 
+                                    Seorang profesional kreatif yang passionate dalam Web Development, Desain Konten Medsos & Desain, serta Video Editing.
+                                    Saya fokus pada pembuatan solusi digital komprehensif yang tidak hanya terlihat bagus secara visual, tetapi juga berfungsi
                                     dengan sempurna dan memiliki user experience terbaik.
                                 </p>
-                                
+
                                 {/* Specializations */}
                                 <div className="mb-6 space-y-2">
                                     <div className="flex items-start gap-2 justify-center md:justify-start">
@@ -225,21 +225,21 @@ const Homepage: React.FC = () => {
                                         <span className="text-brand-text-secondary">Indonesia</span>
                                     </div>
                                 </div>
-                                
+
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                                    <a 
-                                        href="https://nopianhad1.netlify.app/" 
-                                        target="_blank" 
+                                    <a
+                                        href="https://nopianhad1.netlify.app/"
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="button-secondary inline-flex items-center justify-center gap-2 px-6 py-3 group"
                                     >
                                         <LinkIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                         <span>Lihat Portfolio</span>
                                     </a>
-                                    <a 
-                                        href="https://wa.me/6289540618407" 
-                                        target="_blank" 
+                                    <a
+                                        href="https://wa.me/6289540618407"
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="button-primary inline-flex items-center justify-center gap-2 px-6 py-3 group"
                                     >

@@ -412,6 +412,15 @@ function App() {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [promoCodes, setPromoCodes] = React.useState<PromoCode[]>([]);
 
+  // Load promo codes from Supabase on mount
+  React.useEffect(() => {
+    let isMounted = true;
+    listPromoCodes()
+      .then((data) => { if (isMounted) setPromoCodes(data); })
+      .catch((err) => console.warn('[PromoCodes] Failed to load:', err));
+    return () => { isMounted = false; };
+  }, []);
+
   // --- [NEW] CENTRALIZED NOTIFICATION HANDLER ---
   const addNotification = async (
     newNotificationData: Omit<Notification, "id" | "timestamp" | "isRead">,
@@ -587,11 +596,16 @@ function App() {
   }, [appData.leads, appData.loaded.leads]); */
 
   // --- Sync client feedback from lazy loading hook ---
-  /* React.useEffect(() => {
+  const prevClientFeedbackRef = React.useRef<string>('');
+  React.useEffect(() => {
     if (appData.loaded.clientFeedback) {
-      setClientFeedback(appData.clientFeedback);
+      const serialized = JSON.stringify(appData.clientFeedback);
+      if (serialized !== prevClientFeedbackRef.current) {
+        prevClientFeedbackRef.current = serialized;
+        setClientFeedback(appData.clientFeedback);
+      }
     }
-  }, [appData.clientFeedback, appData.loaded.clientFeedback]); */
+  }, [appData.clientFeedback, appData.loaded.clientFeedback]);
 
   // --- Sync transactions from lazy loading hook with REALTIME ---
   /* React.useEffect(() => {
