@@ -111,7 +111,7 @@ const Homepage: React.FC = () => {
                         <NavigationCard
                             title="Profil Pengguna"
                             description="Kelola profil dan pengaturan akun Anda"
-                            link="Laba Bersih#/profile"
+                            link="https://keuanganvendor.netlify.app/#/profile"
                             icon={<UsersIcon className="w-6 h-6" />}
                         />
                         <NavigationCard
