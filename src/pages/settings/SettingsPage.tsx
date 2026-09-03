@@ -22,6 +22,7 @@ const ProjectStatusManager: React.FC<{
     onAddDefaultStatuses?: () => void;
 }> = ({ config, onConfigChange, projects, profile, onAddDefaultStatuses }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
     const [selectedStatus, setSelectedStatus] = useState<ProjectStatusConfig | null>(null);
 
@@ -83,6 +84,9 @@ const ProjectStatusManager: React.FC<{
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
         if (modalMode === 'add') {
             const newStatus: ProjectStatusConfig = {
                 id: crypto.randomUUID(),
@@ -112,6 +116,9 @@ const ProjectStatusManager: React.FC<{
             }
         }
         handleCloseModal();
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleDelete = async (statusId: string) => {
@@ -203,7 +210,7 @@ const ProjectStatusManager: React.FC<{
 
                     <div className="flex justify-end gap-3 pt-6 border-t border-brand-border">
                         <button type="button" onClick={handleCloseModal} className="button-secondary">Batal</button>
-                        <button type="submit" className="button-primary">{modalMode === 'add' ? 'Simpan Status' : 'Update Status'}</button>
+                        <button type="submit" disabled={isSubmitting} className="button-primary">{isSubmitting ? 'Menyimpan...' : (modalMode === 'add' ? 'Simpan Status' : 'Update Status')}</button>
                     </div>
                 </form>
             </Modal>
@@ -1464,6 +1471,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
 
     const handleUserFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSaving) return;
         setUserFormError('');
 
         if (userForm.password && userForm.password !== userForm.confirmPassword) {
@@ -1471,6 +1479,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
             return;
         }
 
+        setIsSaving(true);
         try {
             if (userModalMode === 'add') {
                 if (!userForm.email || !userForm.password || !userForm.fullName) {
@@ -2217,7 +2226,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
 
                     <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-brand-border">
                         <button type="button" onClick={handleCloseUserModal} className="button-secondary w-full sm:w-auto">Batal</button>
-                        <button type="submit" className="button-primary w-full sm:w-auto">{userModalMode === 'add' ? 'Simpan Pengguna' : 'Update Pengguna'}</button>
+                        <button type="submit" disabled={isSaving} className="button-primary w-full sm:w-auto">{isSaving ? 'Menyimpan...' : (userModalMode === 'add' ? 'Simpan Pengguna' : 'Update Pengguna')}</button>
                     </div>
                 </form>
             </Modal>

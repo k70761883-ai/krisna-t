@@ -232,7 +232,7 @@ interface ClientFormProps {
     formData: typeof initialFormState;
     setFormData: React.Dispatch<React.SetStateAction<typeof initialFormState>>;
     handleFormChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-    handleFormSubmit: (e: React.FormEvent) => void;
+    handleFormSubmit: (e: React.FormEvent) => Promise<void> | void;
     handleCloseModal: () => void;
     packages: Package[];
     addOns: AddOn[];
@@ -244,6 +244,18 @@ interface ClientFormProps {
 
 const ClientForm: React.FC<ClientFormProps> = ({ formData, setFormData, handleFormChange, handleFormSubmit, handleCloseModal, packages, addOns, userProfile, modalMode, cards, promoCodes }) => {
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleInternalSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleFormSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     // Get unique regions from packages
     const availableRegions = useMemo(() => {
@@ -296,7 +308,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ formData, setFormData, handleFo
     }, [formData.packageId, formData.selectedAddOnIds, formData.dp, formData.promoCodeId, packages, addOns, promoCodes]);
 
     return (
-        <form onSubmit={handleFormSubmit} className="form-compact form-compact--ios-scale">
+        <form onSubmit={handleInternalSubmit} className="form-compact form-compact--ios-scale">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-2">
                 {/* Left Column: Client & Project Info */}
                 <div className="space-y-5">
@@ -504,7 +516,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ formData, setFormData, handleFo
 
             <div className="flex justify-end items-center gap-3 pt-8 mt-8 border-t border-brand-border">
                 <button type="button" onClick={handleCloseModal} className="button-secondary">Batal</button>
-                <button type="submit" className="button-primary">{modalMode === 'add' ? 'Simpan Pengantin & Acara Pernikahan' : 'Update Pengantin & Acara Pernikahan'}</button>
+                <button type="submit" disabled={isSubmitting} className="button-primary">{isSubmitting ? 'Menyimpan...' : (modalMode === 'add' ? 'Simpan Pengantin & Acara Pernikahan' : 'Update Pengantin & Acara Pernikahan')}</button>
             </div>
         </form>
     );

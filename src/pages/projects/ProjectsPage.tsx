@@ -162,7 +162,7 @@ interface ProjectFormProps {
     onCustomSubStatusChange: (index: number, field: 'name' | 'note', value: string) => void;
     onAddCustomSubStatus: () => void;
     onRemoveCustomSubStatus: (index: number) => void;
-    onSubmit: (e: React.FormEvent) => void;
+    onSubmit: (e: React.FormEvent) => Promise<void> | void;
     clients: Client[];
     teamMembers: TeamMember[];
     teamProjectPayments: TeamProjectPayment[];
@@ -181,6 +181,18 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     profile, teamByCategory,
     showNotification, setFormData
 }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleInternalSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await onSubmit(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const paidMemberIdsForThisProject = useMemo(() => {
         const projectId = formData?.id;
         if (!projectId) return new Set<string>();
@@ -198,7 +210,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             title={mode === 'add' ? 'Tambah Acara Pernikahan Baru (Operasional)' : `Edit Acara Pernikahan: ${formData.projectName}`}
             size="4xl"
         >
-            <form onSubmit={onSubmit} className="space-y-4 md:space-y-6 form-compact form-compact--ios-scale">
+            <form onSubmit={handleInternalSubmit} className="space-y-4 md:space-y-6 form-compact form-compact--ios-scale">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-4 md:gap-y-6 max-h-[70vh] overflow-y-auto pr-2 pb-4">
                     {/* --- LEFT COLUMN --- */}
                     <div className="space-y-5 md:space-y-6">
@@ -494,7 +506,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
                 <div className="flex flex-col md:flex-row justify-end items-stretch md:items-center gap-3 pt-6 border-t border-brand-border">
                     <button type="button" onClick={onClose} className="button-secondary w-full md:w-auto order-2 md:order-1">Batal</button>
-                    <button type="submit" className="button-primary w-full md:w-auto order-1 md:order-2 active:scale-95 transition-transform">{mode === 'add' ? 'Simpan Acara Pernikahan' : 'Update Acara Pernikahan'}</button>
+                    <button type="submit" disabled={isSubmitting} className="button-primary w-full md:w-auto order-1 md:order-2 active:scale-95 transition-transform">{isSubmitting ? 'Menyimpan...' : (mode === 'add' ? 'Simpan Acara Pernikahan' : 'Update Acara Pernikahan')}</button>
                 </div>
             </form>
         </Modal>

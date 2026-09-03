@@ -7,6 +7,14 @@ import RupiahInput from '../../shared/form/RupiahInput';
 import { createPackage as createPackageRow, updatePackage as updatePackageRow, deletePackage as deletePackageRow } from '../../services/packages';
 import { createAddOn as createAddOnRow, updateAddOn as updateAddOnRow, deleteAddOn as deleteAddOnRow } from '../../services/addOns';
 
+// Inline Copy/Duplicate icon
+const CopyIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+);
+
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 }
@@ -54,6 +62,12 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     const [expandedDurationIndex, setExpandedDurationIndex] = useState<number | null>(null);
+
+    // --- Copy/Duplicate Package state ---
+    const [copySourcePkg, setCopySourcePkg] = useState<Package | null>(null);
+    const [copyTargetRegion, setCopyTargetRegion] = useState<string>('');
+    const [copyCustomRegion, setCopyCustomRegion] = useState<string>('');
+    const [isCopying, setIsCopying] = useState(false);
 
     const publicPackagesUrl = useMemo(() => {
         // A more robust solution would involve getting the vendor's unique ID
@@ -284,6 +298,47 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
                 : [{ label: '', price: '' as string | number, default: true }],
         });
     }
+
+    // --- Copy/Duplicate Package Handler ---
+    const handleOpenCopyModal = (pkg: Package) => {
+        setCopySourcePkg(pkg);
+        setCopyTargetRegion('');
+        setCopyCustomRegion('');
+    };
+
+    const handleCloseCopyModal = () => {
+        setCopySourcePkg(null);
+        setCopyTargetRegion('');
+        setCopyCustomRegion('');
+        setIsCopying(false);
+    };
+
+    const handleDuplicatePackage = async () => {
+        if (!copySourcePkg) return;
+        const finalRegion = (copyTargetRegion === '__custom__' ? copyCustomRegion : copyTargetRegion).trim().toLowerCase();
+        if (!finalRegion) {
+            alert('Pilih atau masukkan wilayah tujuan untuk duplikasi package.');
+            return;
+        }
+        setIsCopying(true);
+        try {
+            const { id, ...rest } = copySourcePkg;
+            const newPkg: Omit<Package, 'id'> = {
+                ...rest,
+                name: `${copySourcePkg.name} (${finalRegion.charAt(0).toUpperCase() + finalRegion.slice(1)})`,
+                region: finalRegion as any,
+            };
+            const created = await createPackageRow(newPkg as any);
+            setPackages(prev => [...prev, created]);
+            alert(`Package berhasil diduplikasi ke wilayah "${finalRegion}"!`);
+            handleCloseCopyModal();
+        } catch (err: any) {
+            console.error('[Supabase][packages.duplicate] error:', err);
+            alert(`Gagal menduplikasi Package. ${err?.message || 'Coba lagi.'}`);
+        } finally {
+            setIsCopying(false);
+        }
+    };
 
     const handlePackageDelete = async (pkgId: string) => {
         const isPackageInUse = projects.some(p => p.packageId === pkgId);
@@ -559,7 +614,15 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
 
                                             <div className="flex gap-2 mt-4 pt-4 border-t border-brand-border/50">
                                                 <button onClick={() => handlePackageEdit(pkg)} className="button-secondary flex-1 text-xs py-2 shadow-sm">
-                                                    <PencilIcon className="w-4 h-4" /> Edit Package
+                                                    <PencilIcon className="w-4 h-4" /> Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleOpenCopyModal(pkg)}
+                                                    className="button-secondary !p-2 md:!p-2.5 text-brand-text-secondary hover:text-brand-accent hover:border-brand-accent/50 hover:bg-brand-accent/5 flex-shrink-0"
+                                                    title="Duplikasi Package ke wilayah lain"
+                                                    aria-label={`Duplikasi Package ${pkg.name}`}
+                                                >
+                                                    <CopyIcon className="w-4 h-4" />
                                                 </button>
                                                 <button onClick={() => handlePackageDelete(pkg.id)} className="button-secondary !p-2 md:!p-2.5 text-brand-text-secondary hover:text-red-600 hover:border-red-300 hover:bg-red-50 flex-shrink-0" title="Hapus Package" aria-label={`Hapus Package ${pkg.name}`}><Trash2Icon className="w-4 h-4" /></button>
                                             </div>
@@ -805,6 +868,98 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
                         <button type="submit" className="button-primary w-full md:w-auto order-1 md:order-2 shadow-md min-w-[120px] py-2 md:py-2.5">{packageEditMode === 'new' ? 'Simpan Package' : 'Update Package'}</button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Copy/Duplicate Package Modal */}
+            <Modal isOpen={copySourcePkg !== null} onClose={handleCloseCopyModal} title="Duplikasi Package ke Wilayah Lain">
+                {copySourcePkg && (
+                    <div className="space-y-5">
+                        <div className="glass-card rounded-2xl p-4 border border-brand-border/50 bg-brand-surface/40">
+                            <p className="text-xs font-semibold text-brand-text-secondary uppercase tracking-wider mb-1">Package Sumber</p>
+                            <p className="font-bold text-brand-text-light text-base">{copySourcePkg.name}</p>
+                            {copySourcePkg.region && (
+                                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-accent/10 text-brand-accent border border-brand-accent/20">
+                                    Wilayah: {copySourcePkg.region}
+                                </span>
+                            )}
+                        </div>
+
+                        <div>
+                            <p className="text-sm font-semibold text-brand-text-light mb-3">Pilih Wilayah Tujuan</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {unionRegions.map(r => (
+                                    <button
+                                        key={r.value}
+                                        type="button"
+                                        onClick={() => { setCopyTargetRegion(r.value); setCopyCustomRegion(''); }}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                                            copyTargetRegion === r.value
+                                                ? 'bg-brand-accent text-white border-brand-accent shadow-md'
+                                                : 'glass-card text-brand-text-secondary hover:text-brand-text-light hover:bg-white/50 border-brand-border/50'
+                                        }`}
+                                    >
+                                        {r.label}
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => { setCopyTargetRegion('__custom__'); }}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                                        copyTargetRegion === '__custom__'
+                                            ? 'bg-brand-accent text-white border-brand-accent shadow-md'
+                                            : 'glass-card text-brand-text-secondary hover:text-brand-text-light hover:bg-white/50 border-brand-border/50'
+                                    }`}
+                                >
+                                    + Wilayah Baru
+                                </button>
+                            </div>
+
+                            {copyTargetRegion === '__custom__' && (
+                                <div className="input-group mt-2">
+                                    <input
+                                        type="text"
+                                        id="copyCustomRegion"
+                                        value={copyCustomRegion}
+                                        onChange={e => setCopyCustomRegion(e.target.value)}
+                                        className="input-field bg-white/80"
+                                        placeholder=" "
+                                        autoFocus
+                                    />
+                                    <label htmlFor="copyCustomRegion" className="input-label">Nama Wilayah Baru</label>
+                                </div>
+                            )}
+                        </div>
+
+                        {copyTargetRegion && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+                                <strong>Preview nama package baru:</strong><br />
+                                <span className="font-semibold">"{copySourcePkg.name} ({copyTargetRegion === '__custom__' ? (copyCustomRegion || '...'): copyTargetRegion})"</span>
+                                <br /><span className="text-blue-500 mt-1 block">Anda bisa mengedit nama setelah duplikasi.</span>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                            <button type="button" onClick={handleCloseCopyModal} className="button-secondary flex-1 py-2.5">
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDuplicatePackage}
+                                disabled={isCopying || !copyTargetRegion || (copyTargetRegion === '__custom__' && !copyCustomRegion.trim())}
+                                className="button-primary flex-[2] py-2.5 inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isCopying ? (
+                                    <>
+                                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                        Menduplikasi...
+                                    </>
+                                ) : (
+                                    <><CopyIcon className="w-4 h-4" /> Duplikasi Package</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             <Modal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} title="Tautan Booking per Wilayah">

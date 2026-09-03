@@ -64,6 +64,9 @@ const ClientPortal = lazy(() => import("./src/features/clients/components/Client
 const FreelancerPortal = lazy(() => import("./src/features/team/components/FreelancerPortal"));
 // Social Planner removed
 const PromoCodes = lazy(() => import("./src/features/promo/PromoCodes"));
+const Contracts = lazy(() =>
+  import("./src/pages/contracts/ContractsPage").then((m) => ({ default: m.default })),
+);
 const GalleryUpload = lazy(() => import("./src/features/public/components/GalleryUpload"));
 const PublicGallery = lazy(() => import("./src/features/public/components/PublicGallery"));
 const PublicBookingForm = lazy(() => import("./src/features/public/components/PublicBookingForm"));
@@ -90,6 +93,8 @@ import { useAppData } from "./src/hooks/useAppData";
 import { useData } from "./src/contexts/DataContext";
 import { DataLoadingWrapper } from "./src/shared/ui/LoadingState";
 import { listAllTeamPayments } from "./src/services/teamProjectPayments";
+import { listContracts } from "./src/services/contracts";
+import type { Contract } from "./src/types";
 import { listUsers as listUsersFromDb } from "./src/services/users";
 import { listLeads as listLeadsFromDb } from "./src/services/leads";
 import { listClientFeedback as listClientFeedbackFromDb } from "./src/services/clientFeedback";
@@ -411,6 +416,16 @@ function App() {
   } as unknown as Profile);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [promoCodes, setPromoCodes] = React.useState<PromoCode[]>([]);
+  const [contracts, setContracts] = React.useState<Contract[]>([]);
+
+  // Load contracts from Supabase on mount
+  React.useEffect(() => {
+    let isMounted = true;
+    listContracts()
+      .then((data) => { if (isMounted) setContracts(data); })
+      .catch((err) => console.warn('[Contracts] Failed to load:', err));
+    return () => { isMounted = false; };
+  }, []);
 
   // Load promo codes from Supabase on mount
   React.useEffect(() => {
@@ -1161,6 +1176,7 @@ function App() {
       calendar: ViewType.CALENDAR,
       packages: ViewType.PACKAGES,
       "promo-codes": ViewType.PROMO_CODES,
+      kontrak: ViewType.CONTRACTS,
       gallery: ViewType.GALLERY,
       "client-reports": ViewType.CLIENT_REPORTS,
       settings: ViewType.SETTINGS,
@@ -1231,6 +1247,10 @@ function App() {
       case ViewType.PROMO_CODES:
       case ViewType.CALENDAR:
       case ViewType.GALLERY:
+        appData.loadProjects();
+        break;
+      case ViewType.CONTRACTS:
+        appData.loadClients();
         appData.loadProjects();
         break;
 
@@ -1815,6 +1835,29 @@ function App() {
           <GalleryUpload
             userProfile={profile}
             showNotification={showNotification}
+          />
+        );
+      case ViewType.CONTRACTS:
+        return (
+          <Contracts
+            contracts={contracts}
+            setContracts={setContracts}
+            clients={clients}
+            projects={projects}
+            profile={profile}
+            showNotification={showNotification}
+            initialAction={initialAction}
+            setInitialAction={setInitialAction}
+            packages={packages}
+            onSignContract={(contractId, signatureDataUrl, signer) => {
+              setContracts((prev) =>
+                prev.map((c) =>
+                  c.id === contractId
+                    ? { ...c, [signer === 'vendor' ? 'vendorSignature' : 'clientSignature']: signatureDataUrl }
+                    : c,
+                ),
+              );
+            }}
           />
         );
       default:

@@ -120,6 +120,7 @@ const Contracts: React.FC<ContractsProps> = ({ contracts, setContracts, clients,
     const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
     const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form specific state
     const [formData, setFormData] = useState(initialFormState);
@@ -214,9 +215,10 @@ const Contracts: React.FC<ContractsProps> = ({ contracts, setContracts, clients,
 
         document.body.appendChild(tempWrapper);
 
+        let root: ReturnType<typeof import('react-dom/client').createRoot> | null = null;
         try {
             const ReactDOM = await import('react-dom/client');
-            const root = ReactDOM.createRoot(tempWrapper);
+            root = ReactDOM.createRoot(tempWrapper);
             root.render(
                 <ContractDocument
                     id="contract-content-to-print-no-ttd"
@@ -227,8 +229,8 @@ const Contracts: React.FC<ContractsProps> = ({ contracts, setContracts, clients,
                 />
             );
 
-            // give React a tick to paint
-            await new Promise((r) => setTimeout(r, 50));
+            // Wait long enough for React to fully paint the component
+            await new Promise((r) => setTimeout(r, 300));
 
             const element = tempWrapper.querySelector('#contract-content-to-print-no-ttd') as HTMLElement | null;
             if (!element) return;
@@ -249,15 +251,15 @@ const Contracts: React.FC<ContractsProps> = ({ contracts, setContracts, clients,
 
             try {
                 const html2pdf = (await import('html2pdf.js')).default;
-                html2pdf().set(opt).from(element).save();
+                // Await the full save pipeline before cleanup
+                await html2pdf().set(opt).from(element).save();
             } catch (err) {
                 console.error('Failed to generate PDF:', err);
                 window.print();
             }
-
-            // Cleanup React root
-            try { root.unmount(); } catch {}
         } finally {
+            // Cleanup only after html2pdf is done
+            try { root?.unmount(); } catch {}
             try { document.body.removeChild(tempWrapper); } catch {}
         }
     };
@@ -289,6 +291,8 @@ const Contracts: React.FC<ContractsProps> = ({ contracts, setContracts, clients,
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         
         if (!selectedProjectId) {
             showNotification('Harap pilih proyek terlebih dahulu.');
@@ -341,7 +345,10 @@ const Contracts: React.FC<ContractsProps> = ({ contracts, setContracts, clients,
             handleCloseModal();
         } catch (err: any) {
             console.error('[Supabase][contracts.save] error:', err);
+            console.error('[Supabase][contracts.save] error:', err);
             alert(`Gagal menyimpan kontrak ke database. ${err?.message || 'Coba lagi.'}`);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -779,7 +786,7 @@ const Contracts: React.FC<ContractsProps> = ({ contracts, setContracts, clients,
 
                     <div className="flex justify-end gap-3 pt-6 border-t border-brand-border">
                         <button type="button" onClick={handleCloseModal} className="button-secondary">Batal</button>
-                        <button type="submit" className="button-primary">{modalMode === 'add' ? 'Simpan' : 'Update'}</button>
+                        <button type="submit" disabled={isSubmitting} className="button-primary">{isSubmitting ? 'Menyimpan...' : (modalMode === 'add' ? 'Simpan' : 'Update')}</button>
                     </div>
                 </form>
             </Modal>

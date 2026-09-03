@@ -317,6 +317,7 @@ export const Freelancers: React.FC<FreelancersProps> = ({
     pockets, setPockets, cards, setCards, onSignPaymentRecord, totals
 }) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
     const [isInstallment, setIsInstallment] = useState(false);
@@ -531,6 +532,8 @@ export const Freelancers: React.FC<FreelancersProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             if (formMode === 'add') {
                 const payload: Omit<TeamMember, 'id'> = {
@@ -573,6 +576,8 @@ export const Freelancers: React.FC<FreelancersProps> = ({
             console.error('[Supabase][teamMembers.save] error:', err);
             const errorMessage = err instanceof Error ? err.message : String(err);
             alert(`Gagal menyimpan data Tim / Vendor. ${errorMessage || 'Coba lagi.'}`);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -1471,7 +1476,7 @@ export const Freelancers: React.FC<FreelancersProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="input-group">
                                 <input type="text" id="name" name="name" value={formData.name} onChange={handleFormChange} className="input-field" placeholder=" " required />
-                                <label htmlFor="name" className="input-label">Nama Pengantin</label>
+                                <label htmlFor="name" className="input-label">Nama Tim / Freelance</label>
                                 <p className="text-xs text-brand-text-secondary mt-1">Nama Pengantin Tim / Vendor</p>
                             </div>
                             <div className="input-group">
@@ -1534,7 +1539,7 @@ export const Freelancers: React.FC<FreelancersProps> = ({
 
                     <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-brand-border">
                         <button type="button" onClick={() => setIsFormOpen(false)} className="button-secondary w-full sm:w-auto">Batal</button>
-                        <button type="submit" className="button-primary w-full sm:w-auto">{formMode === 'add' ? 'Simpan' : 'Update'}</button>
+                        <button type="submit" disabled={isSubmitting} className="button-primary w-full sm:w-auto">{isSubmitting ? 'Menyimpan...' : (formMode === 'add' ? 'Simpan' : 'Update')}</button>
                     </div>
                 </form>
             </Modal>

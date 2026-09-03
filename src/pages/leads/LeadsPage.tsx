@@ -149,7 +149,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ formData, handleFormChange, handleS
 
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-brand-border sticky bottom-0 bg-brand-surface">
                 <button type="button" onClick={handleCloseModal} className="button-secondary w-full sm:w-auto">Batal</button>
-                <button type="submit" className="button-primary w-full sm:w-auto">{modalMode === 'add' ? 'Simpan Calon Pengantin' : 'Update Calon Pengantin'}</button>
+                <button type="submit" disabled={isSubmitting} className="button-primary w-full sm:w-auto">{isSubmitting ? 'Menyimpan...' : (modalMode === 'add' ? 'Simpan Calon Pengantin' : 'Update Calon Pengantin')}</button>
             </div>
         </form>
     );
@@ -298,7 +298,7 @@ const ConvertLeadForm: React.FC<ConvertLeadFormProps> = ({ formData, setFormData
 
             <div className="flex justify-end items-center gap-3 pt-8 mt-8 border-t border-brand-border sticky bottom-0 bg-brand-surface">
                 <button type="button" onClick={handleCloseModal} className="button-secondary">Batal</button>
-                <button type="submit" className="button-primary">Konversi Calon Pengantin</button>
+                <button type="submit" disabled={isSubmitting} className="button-primary">{isSubmitting ? 'Menyimpan...' : 'Konversi Calon Pengantin'}</button>
             </div>
         </form>
     );
@@ -631,6 +631,7 @@ export const Leads: React.FC<LeadsProps> = ({
         setIsModalOpen(true);
     };
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const handleCloseModal = () => setIsModalOpen(false);
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -645,6 +646,16 @@ export const Leads: React.FC<LeadsProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmitInner(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleSubmitInner = async (e: React.FormEvent) => {
         if (modalMode === 'add' || modalMode === 'edit') {
             try {
                 if (modalMode === 'add') {

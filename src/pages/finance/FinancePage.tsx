@@ -75,6 +75,7 @@ import TransactionTable from '../../features/finance/components/TransactionTable
 const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pockets, setPockets, projects, setProjects, profile, cards, setCards, teamMembers }) => {
     const [activeTab, setActiveTab] = useState<'transactions' | 'pockets' | 'cards' | 'cashflow' | 'laporan' | 'laporanKartu' | 'labaAcara Pernikahan'>('transactions');
     const [modalState, setModalState] = useState<{ type: null | 'transaction' | 'pocket' | 'card' | 'transfer' | 'topup-cash', mode: 'add' | 'edit', data?: any }>({ type: null, mode: 'add' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [historyModalState, setHistoryModalState] = useState<{ type: 'card' | 'pocket', item: Card | FinancialPocket | null } | null>(null);
     const [form, setForm] = useState<any>({});
     const [activeStatModal, setActiveStatModal] = useState<'assets' | 'pockets' | 'income' | 'expense' | null>(null);
@@ -508,7 +509,7 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmitInner = async (e: React.FormEvent) => {
         e.preventDefault();
         const { type, mode, data } = modalState;
 
@@ -993,7 +994,21 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
         }
     };
 
-    const handleCloseModal = () => setModalState({ type: null, mode: 'add' });
+    const handleCloseModal = () => {
+        setModalState({ type: null, mode: 'add' });
+        setForm({});
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await handleSubmitInner(e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const handleFormChange = (e: React.ChangeEvent<any>) => setForm((prev: any) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -2089,7 +2104,7 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                     </>}
                     <div className="flex justify-end gap-3 pt-6 border-t border-brand-border">
                         <button type="button" onClick={handleCloseModal} className="button-secondary">Batal</button>
-                        <button type="submit" className="button-primary">{modalState.mode === 'add' ? 'Simpan' : 'Update'}</button>
+                        <button type="submit" disabled={isSubmitting} className="button-primary">{isSubmitting ? 'Menyimpan...' : (modalState.mode === 'add' ? 'Simpan' : 'Update')}</button>
                     </div>
                 </form>
             </Modal>}
