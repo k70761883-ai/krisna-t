@@ -3102,7 +3102,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, setProjects, clien
                                 method: 'Sistem',
                                 cardId: paymentCardId,
                             } as any);
-                            await updateCardBalance(paymentCardId, -Math.abs(cost));
+                            // createTransaction sudah atomik update balance via RPC; tidak perlu updateCardBalance lagi
                             setTransactions(prev => [created, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
                             setCards(prev => prev.map(c => c.id === paymentCardId ? { ...c, balance: c.balance - cost } : c));
                         }

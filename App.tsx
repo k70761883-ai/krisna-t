@@ -692,6 +692,11 @@ function App() {
       .then((rows) => setCards(rows.map(mapCardRowToCard)))
       .catch((err) => console.warn("[Cards] Failed to load initial cards:", err));
 
+    // Debounce map: cardId -> { timer, latestNew }. Batasi UPDATE event agar hanya yang terakhir
+    // dalam window 300ms yang diproses, menghindari flicker saat ada 2+ UPDATE
+    // berturut-turut (metadata update + RPC balance update).
+    const pendingUpdates = new Map<string, { timer: ReturnType<typeof setTimeout>; latestNew: any }>();
+
     const channel = supabase
       .channel("realtime-cards")
       .on(
@@ -709,13 +714,25 @@ function App() {
             });
           }
           if (payload.eventType === "UPDATE") {
-            const next = mapCardRowToCard(payload.new);
-            setCards((current) => {
-              const exists = current.some((c) => c.id === next.id);
-              return exists
-                ? current.map((c) => (c.id === next.id ? next : c))
-                : [next, ...current];
-            });
+            const cardId = (payload.new as any).id as string;
+            const existing = pendingUpdates.get(cardId);
+            // Batalkan timer sebelumnya jika masih pending untuk kartu ini
+            if (existing) {
+              clearTimeout(existing.timer);
+            }
+            // Jadwalkan apply setelah 300ms — simpan data terbaru agar closure selalu pakai yang latest
+            const entry = { timer: null as any, latestNew: payload.new };
+            entry.timer = setTimeout(() => {
+              pendingUpdates.delete(cardId);
+              const next = mapCardRowToCard(entry.latestNew);
+              setCards((current) => {
+                const exists = current.some((c) => c.id === next.id);
+                return exists
+                  ? current.map((c) => (c.id === next.id ? next : c))
+                  : [next, ...current];
+              });
+            }, 300);
+            pendingUpdates.set(cardId, entry);
           }
           if (payload.eventType === "DELETE") {
             setCards((current) =>
@@ -727,6 +744,9 @@ function App() {
       .subscribe();
 
     return () => {
+      // Bersihkan semua timer yang masih pending saat unmount
+      pendingUpdates.forEach((entry) => clearTimeout(entry.timer));
+      pendingUpdates.clear();
       supabase.removeChannel(channel);
     };
   }, []);

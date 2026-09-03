@@ -768,6 +768,10 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                     });
 
                     // [ADJUSTMENT] Handle balance correction
+                    // CATATAN: createTransactionRow sudah memanggil RPC create_transaction_with_balance_update
+                    // yang secara atomik mengupdate saldo kartu. Jangan panggil updateCardBalance lagi
+                    // setelah ini, karena akan menyebabkan saldo dikurangi/ditambah dua kali.
+                    let finalBalance = Number(updated.balance || 0);
                     if (form.adjustmentAmount && Number(form.adjustmentAmount) !== 0) {
                         const amount = Number(form.adjustmentAmount);
                         const reason = form.adjustmentReason || 'Penyesuaian Saldo';
@@ -785,9 +789,9 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
 
                             setTransactions(prev => [adjTx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
-                            // Real DB update for balance
-                            await updateCardBalance(updated.id, amount);
-                            updated.balance = (updated.balance || 0) + amount;
+                            // Saldo sudah diupdate oleh RPC di dalam createTransactionRow.
+                            // Hitung saldo lokal dari nilai DB yang ada + delta, tanpa memanggil DB lagi.
+                            finalBalance = finalBalance + amount;
                         } catch (e) {
                             console.warn('[Finance] Gagal menyimpan penyesuaian saldo.', e);
                         }
@@ -801,7 +805,7 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                         lastFourDigits: updated.last_four_digits,
                         expiryDate: updated.expiry_date || '',
                         colorGradient: updated.color_gradient || '',
-                        balance: Number(updated.balance || 0),
+                        balance: finalBalance,
                     };
                     setCards(prev => prev.map(c => c.id === uiCard.id ? { ...c, ...uiCard } : c));
                     showNotification('Kartu berhasil diperbarui.');
@@ -2122,43 +2126,80 @@ const Finance: React.FC<FinanceProps> = ({ transactions, setTransactions, pocket
                                 <tr>
                                     <th className="p-3 text-left">Tanggal</th>
                                     <th className="p-3 text-left">Deskripsi</th>
+                                    <th className="p-3 text-left">Kategori</th>
                                     <th className="p-3 text-left">Sumber/Tujuan</th>
                                     <th className="p-3 text-right">Jumlah</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-brand-border">
-                                {transactions
-                                    .filter(t => (historyModalState.type === 'card' && t.cardId === historyModalState.item?.id) || (historyModalState.type === 'pocket' && t.pocketId === historyModalState.item?.id))
-                                    .map(t => {
+                                {(() => {
+                                    const historyItem = historyModalState.item;
+                                    const filtered = transactions
+                                        .filter(t =>
+                                            (historyModalState.type === 'card' && t.cardId === historyItem?.id) ||
+                                            (historyModalState.type === 'pocket' && t.pocketId === historyItem?.id)
+                                        )
+                                        // Sort by date descending (terbaru di atas)
+                                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                                    if (filtered.length === 0) {
+                                        return (
+                                            <tr>
+                                                <td colSpan={5} className="text-center p-8 text-brand-text-secondary">
+                                                    Tidak ada riwayat transaksi.
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    return filtered.map(t => {
                                         const card = cards.find(c => c.id === t.cardId);
+                                        const bankName = card?.bankName || (historyModalState.type === 'card' ? (historyModalState.item as Card).bankName : null) || 'N/A';
+
+                                        // Tentukan teks Sumber/Tujuan berdasarkan kategori dan tipe
                                         let sourceDestText = '';
-                                        if (t.category.includes('Transfer') || t.category.includes('Penutupan')) {
-                                            if (t.description.includes('Setor ke')) {
-                                                sourceDestText = `Dari: ${card?.bankName || 'N/A'}`;
-                                            } else if (t.description.includes('Tarik dari')) {
-                                                sourceDestText = `Ke: ${card?.bankName || 'N/A'}`;
+                                        if (t.category === 'Penyesuaian') {
+                                            // Penyesuaian saldo manual — sumber adalah sistem/bank itu sendiri
+                                            sourceDestText = `${t.type === TransactionType.INCOME ? 'Ke' : 'Dari'}: ${bankName}`;
+                                        } else if (t.category.includes('Transfer') || t.category.includes('Penutupan')) {
+                                            if (t.description.toLowerCase().includes('setor ke') || t.description.toLowerCase().includes('transfer ke')) {
+                                                sourceDestText = `Dari: ${bankName}`;
+                                            } else if (t.description.toLowerCase().includes('tarik dari') || t.description.toLowerCase().includes('penarikan dari')) {
+                                                sourceDestText = `Ke: ${bankName}`;
                                             } else {
                                                 sourceDestText = 'Sistem Internal';
                                             }
                                         } else if (t.type === TransactionType.INCOME) {
-                                            sourceDestText = `Ke: ${card?.bankName || 'N/A'}`;
+                                            sourceDestText = `Ke: ${bankName}`;
                                         } else if (t.type === TransactionType.EXPENSE) {
-                                            sourceDestText = `Dari: ${card?.bankName || 'N/A'}`;
+                                            sourceDestText = `Dari: ${bankName}`;
                                         }
+
                                         return (
                                             <tr key={t.id} className="hover:bg-brand-bg">
-                                                <td className="p-3">{new Date(t.date).toLocaleDateString('id-ID')}</td>
+                                                <td className="p-3 whitespace-nowrap">{new Date(t.date).toLocaleDateString('id-ID')}</td>
                                                 <td className="p-3 font-semibold text-brand-text-light">{t.description}</td>
+                                                <td className="p-3">
+                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                        t.category === 'Penyesuaian'
+                                                            ? 'bg-yellow-500/20 text-yellow-400'
+                                                            : t.category.includes('Transfer')
+                                                                ? 'bg-blue-500/20 text-blue-400'
+                                                                : t.type === TransactionType.INCOME
+                                                                    ? 'bg-green-500/20 text-green-400'
+                                                                    : 'bg-red-500/20 text-red-400'
+                                                    }`}>
+                                                        {t.category}
+                                                    </span>
+                                                </td>
                                                 <td className="p-3 text-brand-text-secondary">{sourceDestText}</td>
                                                 <td className={`p-3 text-right font-semibold ${t.type === TransactionType.INCOME ? 'text-brand-success' : 'text-brand-danger'}`}>
-                                                    {t.type === TransactionType.EXPENSE ? '-' : ''}{formatCurrency(t.amount)}
+                                                    {t.type === TransactionType.EXPENSE ? '-' : '+'}{formatCurrency(t.amount)}
                                                 </td>
                                             </tr>
                                         );
-                                    })}
-                                {transactions.filter(t => (historyModalState.type === 'card' && t.cardId === historyModalState.item?.id) || (historyModalState.type === 'pocket' && t.pocketId === historyModalState.item?.id)).length === 0 &&
-                                    <tr><td colSpan={4} className="text-center p-8 text-brand-text-secondary">Tidak ada riwayat transaksi.</td></tr>
-                                }
+                                    });
+                                })()}
                             </tbody>
                         </table>
                     </div>

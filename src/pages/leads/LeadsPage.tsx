@@ -10,7 +10,6 @@ import Modal from '../../shared/ui/Modal';
 import RupiahInput from '../../shared/form/RupiahInput';
 import { PlusIcon, PencilIcon, Trash2Icon, Share2Icon, DownloadIcon, SendIcon, UsersIcon, TargetIcon, TrendingUpIcon, CalendarIcon, MapPinIcon, QrCodeIcon, MessageSquareIcon, CameraIcon, FileTextIcon, PhoneIncomingIcon, LightbulbIcon, ChevronRightIcon, CheckCircleIcon, EyeIcon, LinkIcon, WhatsappIcon } from '../../constants';
 import StatCard from '../../shared/ui/StatCard';
-import DonutChart from '../../shared/ui/DonutChart';
 import { cleanPhoneNumber } from '../../constants';
 import { listLeads as _listLeads, createLead as createLeadRow, updateLead as updateLeadRow, deleteLead as deleteLeadRow } from '../../services/leads';
 import { createClient as createClientRow } from '../../services/clients';
@@ -306,58 +305,6 @@ const ConvertLeadForm: React.FC<ConvertLeadFormProps> = ({ formData, setFormData
 
 
 // --- SUB-COMPONENTS ---
-
-const LeadsAnalytics: React.FC<{ leads: Lead[]; totals: LeadsProps['totals']; onStatCardClick: (stat: string) => void }> = ({ leads, totals, onStatCardClick }) => {
-    // Build region-only distribution across all leads
-    const regionDonutData = useMemo(() => {
-        const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f43f5e', '#a855f7', '#14b8a6'];
-        const distribution = leads.reduce((acc, l) => {
-            const key = ((l.location || '').trim()) || 'Tidak Diketahui';
-            acc[key] = (acc[key] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        return Object.entries(distribution)
-            .sort(([, a], [, b]) => Number(b) - Number(a))
-            .map(([label, value], idx) => ({ label, value, color: palette[idx % palette.length] }));
-    }, [leads]);
-
-    // Overall status counts from DB totals
-    const overallCounts = useMemo(() => ({
-        discussion: totals.discussionLeads,
-        followUp: totals.followUpLeads,
-        converted: leads.filter(l => l.status === LeadStatus.CONVERTED).length, // These are harder to get from global totals without more fields
-        rejected: leads.filter(l => l.status === LeadStatus.REJECTED).length,
-    }), [leads, totals]);
-
-    return (
-        <div className="space-y-6 mb-6">
-            <div className="bg-brand-surface p-6 rounded-2xl shadow-lg border border-brand-border">
-                <div className="flex items-center justify-between mb-4 gap-3">
-                    <h4 className="text-lg font-bold text-gradient">Distribusi Calon Pengantin per Wilayah</h4>
-                </div>
-                <DonutChart data={regionDonutData} />
-                <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><EyeIcon className="w-4 h-4" /> {statusConfig[LeadStatus.DISCUSSION].title}</span>
-                        <span className="text-sm font-semibold" style={{ color: statusConfig[LeadStatus.DISCUSSION].color }}>{overallCounts.discussion}</span>
-                    </div>
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><ChevronRightIcon className="w-4 h-4" /> {statusConfig[LeadStatus.FOLLOW_UP].title}</span>
-                        <span className="text-sm font-semibold" style={{ color: statusConfig[LeadStatus.FOLLOW_UP].color }}>{overallCounts.followUp}</span>
-                    </div>
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><CheckCircleIcon className="w-4 h-4" /> {statusConfig[LeadStatus.CONVERTED].title}</span>
-                        <span className="text-sm font-semibold" style={{ color: statusConfig[LeadStatus.CONVERTED].color }}>{overallCounts.converted}</span>
-                    </div>
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><Trash2Icon className="w-4 h-6" /> {statusConfig[LeadStatus.REJECTED].title}</span>
-                        <span className="text-sm font-semibold" style={{ color: statusConfig[LeadStatus.REJECTED].color }}>{overallCounts.rejected}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const LeadCard: React.FC<{
     lead: Lead;
@@ -848,7 +795,6 @@ export const Leads: React.FC<LeadsProps> = ({
                 <>
                     <PageHeader title="Calon Pengantin 💍" subtitle="Kelola calon pengantin Anda dari kontak pertama hingga menjadi Acara Pernikahan." icon={<LightbulbIcon className="w-6 h-6" />}> <button onClick={() => setIsInfoModalOpen(true)} className="button-secondary">Pelajari Halaman Ini</button></PageHeader>
 
-                    <LeadsAnalytics leads={leads} totals={totals} onStatCardClick={handleStatCardClick} />
                     <div className="bg-brand-surface p-4 rounded-xl shadow-lg border border-brand-border flex flex-col md:flex-row justify-between items-center gap-4 leads-filter-section">
                         <div className="input-group flex-grow !mt-0 w-full md:w-auto"><input type="search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-field !rounded-lg !border !bg-brand-bg p-2.5" placeholder=" " /><label className="input-label">Cari Calon Pengantin...</label></div>
                         <div className="flex items-center gap-4 w-full md:w-auto leads-filter-row">

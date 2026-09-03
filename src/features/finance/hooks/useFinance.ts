@@ -14,12 +14,14 @@ export const useFinance = (
 ) => {
     const handleAddTransaction = useCallback(async (data: any) => {
         try {
+            // createTransactionRow sudah atomik update saldo kartu via RPC jika ada cardId.
+            // Jangan panggil updateCardBalance lagi setelah ini.
             const created = await createTransactionRow(data);
             setTransactions(prev => [created, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
             if (created.cardId) {
                 const delta = created.type === TransactionType.INCOME ? created.amount : -created.amount;
-                await updateCardBalance(created.cardId, delta);
+                // Hanya update local state; DB sudah diupdate oleh RPC di dalam createTransactionRow
                 setCards(prev => prev.map(c => c.id === created.cardId ? { ...c, balance: (c.balance || 0) + delta } : c));
             }
 

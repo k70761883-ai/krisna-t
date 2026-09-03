@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Client, Lead, Project, ClientStatus, ContactChannel, ClientFeedback, SatisfactionLevel } from '../../../types';
+import { Client, Lead, Project, ClientStatus, ContactChannel, ClientFeedback, SatisfactionLevel, LeadStatus } from '../../../types';
 import PageHeader from '../../../layouts/PageHeader';
 import Modal from '../../../shared/ui/Modal';
 import StatCard from '../../../shared/ui/StatCard';
 import DonutChart from '../../../shared/ui/DonutChart';
-import { UsersIcon, TargetIcon, TrendingUpIcon, DollarSignIcon, PlusIcon, Share2Icon, StarIcon, SmileIcon, ThumbsUpIcon, MehIcon, FrownIcon, LightbulbIcon } from '../../../constants';
+import { UsersIcon, TargetIcon, TrendingUpIcon, DollarSignIcon, PlusIcon, Share2Icon, StarIcon, SmileIcon, ThumbsUpIcon, MehIcon, FrownIcon, LightbulbIcon, EyeIcon, ChevronRightIcon, CheckCircleIcon, Trash2Icon } from '../../../constants';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -224,6 +224,26 @@ const ClientReports: React.FC<ClientReportsProps> = ({ clients, leads, projects,
         showNotification('Masukan berhasil ditambahkan.');
     };
 
+    const regionDonutData = useMemo(() => {
+        const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f43f5e', '#a855f7', '#14b8a6'];
+        const distribution = filteredLeads.reduce((acc, l) => {
+            const raw = (l.location || '').trim();
+            const key = raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : 'Tidak Diketahui';
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        return Object.entries(distribution)
+            .sort(([, a], [, b]) => Number(b) - Number(a))
+            .map(([label, value], idx) => ({ label, value, color: palette[idx % palette.length] }));
+    }, [filteredLeads]);
+
+    const leadStatusCounts = useMemo(() => ({
+        discussion: filteredLeads.filter(l => l.status === LeadStatus.DISCUSSION).length,
+        followUp: filteredLeads.filter(l => l.status === LeadStatus.FOLLOW_UP).length,
+        converted: filteredLeads.filter(l => l.status === LeadStatus.CONVERTED).length,
+        rejected: filteredLeads.filter(l => l.status === LeadStatus.REJECTED).length,
+    }), [filteredLeads]);
+
     const activeClientsList = useMemo(() => filteredClients.filter(c => c.status === ClientStatus.ACTIVE), [filteredClients]);
 
     const modalTitles: { [key: string]: string } = {
@@ -320,7 +340,32 @@ const ClientReports: React.FC<ClientReportsProps> = ({ clients, leads, projects,
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 widget-animate" style={{ animationDelay: '500ms' }}>
+            <div className="bg-brand-surface p-6 rounded-2xl shadow-lg border border-brand-border widget-animate" style={{ animationDelay: '500ms' }}>
+                <div className="flex items-center justify-between mb-4 gap-3">
+                    <h4 className="text-lg font-bold text-gradient">Distribusi Calon Pengantin per Wilayah</h4>
+                </div>
+                <DonutChart data={regionDonutData} />
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><EyeIcon className="w-4 h-4" /> Sedang Diskusi</span>
+                        <span className="text-sm font-semibold" style={{ color: '#3b82f6' }}>{leadStatusCounts.discussion}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><ChevronRightIcon className="w-4 h-4" /> Menunggu Follow Up</span>
+                        <span className="text-sm font-semibold" style={{ color: '#8b5cf6' }}>{leadStatusCounts.followUp}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><CheckCircleIcon className="w-4 h-4" /> Dikonversi</span>
+                        <span className="text-sm font-semibold" style={{ color: '#10b981' }}>{leadStatusCounts.converted}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-brand-border bg-brand-bg/60">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-brand-text-secondary"><Trash2Icon className="w-4 h-4" /> Ditolak</span>
+                        <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>{leadStatusCounts.rejected}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 widget-animate" style={{ animationDelay: '600ms' }}>
                 <div className="lg:col-span-2 bg-brand-surface p-4 md:p-6 rounded-2xl shadow-lg border border-brand-border">
                     <h4 className="text-base md:text-lg font-bold text-gradient mb-3 md:mb-4">Sumber Calon Pengantin</h4>
                     <DonutChart data={kpiData.leadSourceDonutData} />
@@ -373,7 +418,7 @@ const ClientReports: React.FC<ClientReportsProps> = ({ clients, leads, projects,
                 </div>
             </div>
 
-            <div className="bg-brand-surface p-4 md:p-6 rounded-2xl shadow-lg border border-brand-border widget-animate" style={{ animationDelay: '600ms' }}>
+            <div className="bg-brand-surface p-4 md:p-6 rounded-2xl shadow-lg border border-brand-border widget-animate" style={{ animationDelay: '700ms' }}>
                 <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
                     <h4 className="text-base md:text-lg font-bold text-gradient">Analisis Kepuasan Pengantin</h4>
                     <div className="flex items-center gap-2 self-start md:self-center">

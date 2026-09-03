@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Client, Project, Transaction, Card, FinancialPocket, PromoCode, Package, AddOn, ClientStatus, PaymentStatus, TransactionType, ClientType } from '../../../types';
 import { createClient as createClientRow, updateClient as updateClientRow, deleteClient as deleteClientRow } from '../../../services/clients';
 import { createProject as createProjectRow, updateProject as updateProjectRow, deleteProject as deleteProjectRow } from '../../../services/projects';
-import { createTransaction as createTransactionRow, updateCardBalance, updateTransaction as updateTransactionRow } from '../../../services/transactions';
+import { createTransaction as createTransactionRow, updateTransaction as updateTransactionRow } from '../../../services/transactions';
 import { findCardIdByMeta } from '../../../services/cards';
 
 export const useClients = (
@@ -35,7 +35,7 @@ export const useClients = (
             setTransactions(prev => [createdTx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
             if (destinationCardId) {
-                await updateCardBalance(destinationCardId, amount);
+                // createTransactionRow sudah atomik update balance via RPC; hanya sync local state
                 setCards(prev => prev.map(c => c.id === destinationCardId ? { ...c, balance: (c.balance || 0) + amount } : c));
             }
 
