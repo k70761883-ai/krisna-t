@@ -80,9 +80,9 @@ export async function safeDeleteCard(id: string): Promise<void> {
     .eq('card_id', id);
   if (txErr) throw txErr;
 
-  // 2) Nullify references in pockets (if your schema has this column)
+  // 2) Nullify references in pockets
   const { error: pkErr } = await supabase
-    .from('financial_pockets')
+    .from('pockets')
     .update({ source_card_id: null })
     .eq('source_card_id', id);
   if (pkErr) throw pkErr;
