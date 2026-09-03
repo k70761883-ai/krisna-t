@@ -68,9 +68,10 @@ interface LeadFormProps {
     handleSubmit: (e: React.FormEvent) => void;
     handleCloseModal: () => void;
     modalMode: 'add' | 'edit';
+    isSubmitting: boolean;
 }
 
-const LeadForm: React.FC<LeadFormProps> = ({ formData, handleFormChange, handleSubmit, handleCloseModal, modalMode }) => {
+const LeadForm: React.FC<LeadFormProps> = ({ formData, handleFormChange, handleSubmit, handleCloseModal, modalMode, isSubmitting }) => {
     return (
         <form onSubmit={handleSubmit} className="space-y-4 form-compact form-compact--ios-scale">
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
@@ -902,6 +903,7 @@ export const Leads: React.FC<LeadsProps> = ({
                         handleSubmit={handleSubmit}
                         handleCloseModal={handleCloseModal}
                         modalMode={modalMode}
+                        isSubmitting={isSubmitting}
                     />
                 )}
             </Modal>

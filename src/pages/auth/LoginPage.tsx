@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { User } from '../../types';
 import { GoogleIcon } from '../../constants';
+import { getUserByEmail } from '../../services/users';
 
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,7 +39,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, users }) => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
@@ -46,24 +47,30 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, users }) => {
         const cleanEmail = email.trim();
         const cleanPassword = password.trim();
 
-        console.log('[Login] Attempting login for:', cleanEmail);
+        try {
+            // First try direct DB lookup to avoid timing issues with users prop
+            let user = await getUserByEmail(cleanEmail);
 
-        // Find user from the users prop (already loaded from database)
-        const user = users.find(u => u.email === cleanEmail);
-        
-        if (user) {
-            console.log('[Login] User found');
-            if (user.password === cleanPassword || user.password === password) {
-                onLoginSuccess(user);
+            // Fallback to users prop (in case DB is unreachable)
+            if (!user) {
+                user = users.find(u => u.email === cleanEmail) ?? null;
+            }
+
+            if (user) {
+                const dbPwd = user.password?.trim() ?? '';
+                if (dbPwd === cleanPassword) {
+                    onLoginSuccess(user);
+                } else {
+                    setError('Username atau kata sandi salah.');
+                }
             } else {
-                console.warn('[Login] Password mismatch');
                 setError('Username atau kata sandi salah.');
             }
-        } else {
-            console.warn('[Login] No user found with email:', cleanEmail);
-            setError('Username atau kata sandi salah.');
+        } catch (err) {
+            console.error('[Login] Error during login:', err);
+            setError('Terjadi kesalahan. Coba lagi.');
         }
-        
+
         setIsLoading(false);
     };
 
@@ -155,39 +162,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, users }) => {
                     </div>
                 </div>
 
-                {/* Demo Users Card */}
-                <div className="mt-4 bg-amber-50/90 backdrop-blur-sm border border-amber-200 rounded-2xl p-4 shadow-md">
-                    <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3 text-center">
-                        Demo Akun
-                    </p>
-                    <div className="space-y-2">
-                        {[
-                            { role: 'Admin', email: 'admin@atter.com', password: 'hashedpassword' },
-                            { role: 'Kasir', email: 'kasir@atter.com', password: 'hashedpassword' },
-                            { role: 'Member', email: 'member@atter.com', password: 'hashedpassword' },
-                        ].map((demo) => (
-                            <button
-                                key={demo.email}
-                                type="button"
-                                onClick={() => { setEmail(demo.email); setPassword(demo.password); setError(''); }}
-                                className="w-full flex items-center justify-between px-3 py-2 bg-white border border-amber-200 rounded-lg hover:bg-amber-100 hover:border-amber-400 transition-colors group"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-semibold bg-amber-400 text-white px-2 py-0.5 rounded-full min-w-[46px] text-center">
-                                        {demo.role}
-                                    </span>
-                                    <span className="text-xs text-slate-600 font-mono">{demo.email}</span>
-                                </div>
-                                <span className="text-xs text-amber-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                                    Gunakan →
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                    <p className="text-xs text-amber-600 text-center mt-2 opacity-70">
-                        Klik akun untuk mengisi form otomatis
-                    </p>
-                </div>
+
             </div>
         </div>
     );
