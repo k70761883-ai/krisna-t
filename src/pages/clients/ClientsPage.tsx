@@ -1366,6 +1366,7 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients, projects, setPro
     const [isBookingFormShareModalOpen, setIsBookingFormShareModalOpen] = useState(false);
     const [activeStatModal, setActiveStatModal] = useState<'active' | 'location' | 'receivables' | 'total' | null>(null);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+    const [showAllDues, setShowAllDues] = useState(false);
 
     useEffect(() => {
         if (initialAction && initialAction.type === 'VIEW_CLIENT_DETAILS' && initialAction.id) {
@@ -1859,7 +1860,7 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients, projects, setPro
 
                         setTransactions(prev => [newTx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
                         if (supaCardId) {
-                            await updateCardBalance(supaCardId, newAmountPaid);
+                            // createTransactionRow sudah update balance via RPC; hanya sync local state
                             setCards(prev => prev.map(c => c.id === formData.dpDestinationCardId ? { ...c, balance: c.balance + newAmountPaid } : c));
                         }
                     } catch (e) {
@@ -2470,7 +2471,7 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients, projects, setPro
                 </div>
                 {/* Mobile cards */}
                 <div className="md:hidden p-4 space-y-3">
-                    {clientsWithDues.map(client => (
+                    {(showAllDues ? clientsWithDues : clientsWithDues.slice(0, 5)).map(client => (
                         <div key={client.id} className="rounded-2xl bg-white/5 border border-brand-border p-4 shadow-sm">
                             <div className="flex items-start justify-between">
                                 <div>
@@ -2498,6 +2499,14 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients, projects, setPro
                     {clientsWithDues.length === 0 && (
                         <p className="text-center py-8 text-brand-text-secondary">Luar biasa! Semua pengantin sudah lunas.</p>
                     )}
+                    {clientsWithDues.length > 5 && (
+                        <button
+                            onClick={() => setShowAllDues(p => !p)}
+                            className="w-full py-2.5 text-sm font-medium text-brand-accent hover:text-brand-accent/80 border border-brand-accent/30 hover:border-brand-accent/60 rounded-xl transition-colors"
+                        >
+                            {showAllDues ? 'Tampilkan lebih sedikit' : `Lihat lebih banyak (${clientsWithDues.length - 5} lainnya)`}
+                        </button>
+                    )}
                 </div>
                 {/* Desktop table */}
                 <div className="hidden md:block overflow-x-auto">
@@ -2512,7 +2521,7 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients, projects, setPro
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border">
-                            {clientsWithDues.map(client => (
+                            {(showAllDues ? clientsWithDues : clientsWithDues.slice(0, 5)).map(client => (
                                 <tr key={client.id} className="hover:bg-brand-bg transition-colors">
                                     <td className="px-6 py-4">
                                         <p className="font-semibold text-brand-text-light">{client.name}</p>
@@ -2541,6 +2550,16 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients, projects, setPro
                             )}
                         </tbody>
                     </table>
+                    {clientsWithDues.length > 5 && (
+                        <div className="p-4 border-t border-brand-border text-center">
+                            <button
+                                onClick={() => setShowAllDues(p => !p)}
+                                className="px-6 py-2.5 text-sm font-medium text-brand-accent hover:text-brand-accent/80 border border-brand-accent/30 hover:border-brand-accent/60 rounded-xl transition-colors"
+                            >
+                                {showAllDues ? 'Tampilkan lebih sedikit' : `Lihat lebih banyak (${clientsWithDues.length - 5} lainnya)`}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
