@@ -27,12 +27,14 @@ import {
   FolderKanbanIcon,
   UsersIcon,
   DollarSignIcon,
+  MoreGridIcon,
   darkenColor,
   hexToHsl,
 } from "./src/constants";
 import Sidebar from "./src/layouts/Sidebar";
 import Header from "./src/layouts/Header";
 import ErrorBoundary from "./src/shared/ui/ErrorBoundary";
+import MoreMenuSheet, { MORE_VIEWS } from "./src/shared/ui/MoreMenuSheet";
 // Keep lightweight/core components imported normally
 import GlobalSearch from "./src/layouts/GlobalSearch";
 import Homepage from "./src/pages/home/Homepage";
@@ -168,6 +170,11 @@ const BottomNavBar: React.FC<{
   activeView: ViewType;
   handleNavigation: (view: ViewType) => void;
 }> = ({ activeView, handleNavigation }) => {
+  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
+
+  // True when the current view lives inside the "more" sheet
+  const isMoreActive = MORE_VIEWS.includes(activeView);
+
   const prefetchView = (view: ViewType) => {
     switch (view) {
       case ViewType.DASHBOARD:
@@ -213,111 +220,180 @@ const BottomNavBar: React.FC<{
         break;
     }
   };
-  const navItems = [
-    { view: ViewType.DASHBOARD, label: "Beranda", icon: HomeIcon },
-    { view: ViewType.PROJECTS, label: "Proyek", icon: FolderKanbanIcon },
-    { view: ViewType.CLIENTS, label: "Klien", icon: UsersIcon },
-    { view: ViewType.FINANCE, label: "Keuangan", icon: DollarSignIcon },
+
+  const primaryNavItems = [
+    { view: ViewType.DASHBOARD, label: "Beranda",  icon: HomeIcon        },
+    { view: ViewType.PROJECTS,  label: "Proyek",   icon: FolderKanbanIcon },
+    { view: ViewType.CLIENTS,   label: "Klien",    icon: UsersIcon       },
+    { view: ViewType.FINANCE,   label: "Keuangan", icon: DollarSignIcon  },
   ];
 
-  return (
-    <nav
-      className="
-            bottom-nav 
-            xl:hidden
-            bg-brand-surface/95 
-            backdrop-blur-xl
-            border-t border-brand-border/50
-        "
-    >
-      <div
-        className="
-                flex justify-around items-center
-                h-16
-                px-2
-            "
-        style={{
-          paddingBottom: "var(--safe-area-inset-bottom, 0px)",
-        }}
+  const renderNavButton = (
+    key: string,
+    label: string,
+    icon: React.FC<React.SVGProps<SVGSVGElement>>,
+    isActive: boolean,
+    onClick: () => void,
+    onHover?: () => void,
+  ) => {
+    const IconComponent = icon;
+    return (
+      <button
+        key={key}
+        onClick={onClick}
+        onMouseEnter={onHover}
+        aria-label={label}
+        aria-current={isActive ? "page" : undefined}
+        className={`
+          flex flex-col items-center justify-center
+          w-full h-full
+          px-2 py-2
+          rounded-xl
+          transition-all duration-200
+          min-w-[56px] sm:min-w-[64px] min-h-[44px]
+          relative group overflow-visible
+          ${isActive
+            ? "text-brand-accent bg-brand-accent/10"
+            : "text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-input/50 active:bg-brand-input"
+          }
+        `}
       >
-        {navItems.map((item) => (
-          <button
-            key={item.view}
-            onClick={() => handleNavigation(item.view)}
-            onMouseEnter={() => prefetchView(item.view)}
+        {/* Icon */}
+        <div className="relative mb-1">
+          <IconComponent
             className={`
-                            flex flex-col items-center justify-center 
-                            w-full h-full
-                            px-2 py-2
-                            rounded-xl
-                            transition-all duration-200 
-                            min-w-[56px] sm:min-w-[64px] min-h-[44px]
-                            relative
-                            group
-                            overflow-visible
-                            ${activeView === item.view
+              w-5 h-5 sm:w-6 sm:h-6
+              transition-all duration-200
+              ${isActive ? "transform scale-110" : "group-active:scale-95"}
+            `}
+          />
+          {/* Active pulse dot */}
+          {isActive && (
+            <div className="
+              absolute -top-1 -right-1
+              w-2 h-2
+              bg-brand-accent rounded-full
+              animate-pulse-soft
+            " />
+          )}
+        </div>
+
+        {/* Label */}
+        <span className={`
+          text-[10px] sm:text-xs font-semibold leading-tight transition-all duration-200
+          ${isActive ? "font-bold" : ""}
+        `}>
+          {label}
+        </span>
+
+        {/* Background gradient highlight */}
+        <div className={`
+          absolute inset-0 rounded-xl transition-all duration-300
+          ${isActive
+            ? "bg-gradient-to-t from-brand-accent/10 to-transparent"
+            : "bg-transparent group-hover:bg-brand-input/30"
+          }
+        `} />
+      </button>
+    );
+  };
+
+  return (
+    <>
+      <nav
+        className="
+          bottom-nav
+          xl:hidden
+          bg-brand-surface/95
+          backdrop-blur-xl
+          border-t border-brand-border/50
+        "
+      >
+        <div
+          className="flex justify-around items-center h-16 px-2"
+          style={{ paddingBottom: "var(--safe-area-inset-bottom, 0px)" }}
+        >
+          {/* Primary 4 tabs */}
+          {primaryNavItems.map((item) =>
+            renderNavButton(
+              item.view,
+              item.label,
+              item.icon,
+              activeView === item.view,
+              () => handleNavigation(item.view),
+              () => prefetchView(item.view),
+            )
+          )}
+
+          {/* ── 5th tab: Lainnya ── */}
+          <button
+            onClick={() => setIsMoreOpen(true)}
+            aria-label="Lainnya"
+            aria-haspopup="dialog"
+            aria-expanded={isMoreOpen}
+            aria-current={isMoreActive && !isMoreOpen ? "page" : undefined}
+            className={`
+              flex flex-col items-center justify-center
+              w-full h-full
+              px-2 py-2
+              rounded-xl
+              transition-all duration-200
+              min-w-[56px] sm:min-w-[64px] min-h-[44px]
+              relative group overflow-visible
+              ${(isMoreActive || isMoreOpen)
                 ? "text-brand-accent bg-brand-accent/10"
                 : "text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-input/50 active:bg-brand-input"
               }
-                        `}
-            aria-label={item.label}
+            `}
           >
-            {/* Enhanced Icon */}
-            <div
-              className="
-                            relative
-                            mb-1
-                        "
-            >
-              <item.icon
+            {/* Icon */}
+            <div className="relative mb-1">
+              <MoreGridIcon
                 className={`
-                                w-5 h-5 sm:w-6 sm:h-6
-                                transition-all duration-200
-                                ${activeView === item.view ? "transform scale-110" : "group-active:scale-95"}
-                            `}
+                  w-5 h-5 sm:w-6 sm:h-6
+                  transition-all duration-200
+                  ${(isMoreActive || isMoreOpen) ? "transform scale-110" : "group-active:scale-95"}
+                `}
               />
-
-              {/* Active indicator dot */}
-              {activeView === item.view && (
-                <div
-                  className="
-                                    absolute -top-1 -right-1
-                                    w-2 h-2
-                                    bg-brand-accent
-                                    animate-pulse-soft
-                                "
-                />
+              {/* Active pulse dot — shown when a more-view is active */}
+              {isMoreActive && !isMoreOpen && (
+                <div className="
+                  absolute -top-1 -right-1
+                  w-2 h-2
+                  bg-brand-accent rounded-full
+                  animate-pulse-soft
+                " />
               )}
             </div>
 
-            {/* Enhanced Label */}
-            <span
-              className={`
-                            text-[10px] sm:text-xs font-semibold
-                            leading-tight
-                            transition-all duration-200
-                            ${activeView === item.view ? "font-bold" : ""}
-                        `}
-            >
-              {item.label}
+            {/* Label */}
+            <span className={`
+              text-[10px] sm:text-xs font-semibold leading-tight transition-all duration-200
+              ${(isMoreActive || isMoreOpen) ? "font-bold" : ""}
+            `}>
+              Lainnya
             </span>
 
-            {/* Background highlight */}
-            <div
-              className={`
-                            absolute inset-0
-                            rounded-xl
-                            transition-all duration-300
-                            ${activeView === item.view
-                  ? "bg-gradient-to-t from-brand-accent/10 to-transparent"
-                  : "bg-transparent group-hover:bg-brand-input/30"
-                }
-                        `}
-            />
+            {/* Background gradient highlight */}
+            <div className={`
+              absolute inset-0 rounded-xl transition-all duration-300
+              ${(isMoreActive || isMoreOpen)
+                ? "bg-gradient-to-t from-brand-accent/10 to-transparent"
+                : "bg-transparent group-hover:bg-brand-input/30"
+              }
+            `} />
           </button>
-        ))}
-      </div>
-    </nav>
+        </div>
+      </nav>
+
+      {/* More menu bottom sheet — rendered via portal inside MoreMenuSheet */}
+      <MoreMenuSheet
+        isOpen={isMoreOpen}
+        onClose={() => setIsMoreOpen(false)}
+        activeView={activeView}
+        handleNavigation={handleNavigation}
+      />
+    </>
   );
 };
 
