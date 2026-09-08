@@ -41,6 +41,7 @@ export const ROUTE_TO_VIEW_MAP: Record<string, ViewType> = {
   invoices: ViewType.INVOICES,
   "public-links": ViewType.PUBLIC_LINKS,
   "link-publik": ViewType.PUBLIC_LINKS,
+  "vendor-profile": ViewType.VENDOR_PROFILE,
 };
 
 export const resolveViewFromPath = (path: string): ViewType => {
