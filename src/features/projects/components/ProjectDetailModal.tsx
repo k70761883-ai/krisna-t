@@ -438,8 +438,8 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           HERO HEADER
       ══════════════════════════════════════════════════════════════════ */}
       <div 
-        className="relative rounded-2xl overflow-hidden mb-4 shadow-lg shadow-purple-500/25 bg-cover bg-center"
-        style={{ backgroundImage: 'url(/assets/images/backgrounds/detail-acara-pernikahan.jpg)' }}
+        className="relative rounded-2xl overflow-hidden mb-4 shadow-lg shadow-purple-500/25 bg-cover bg-center min-h-[180px] sm:min-h-0"
+        style={{ backgroundImage: 'url(/assets/images/backgrounds/detail-acara-pernikahan.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />

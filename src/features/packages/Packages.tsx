@@ -251,6 +251,11 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
         setPackageFormData((prev: any) => ({ ...prev, digitalItems: list }));
     };
 
+    const handleDigitalItemsTextarea = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const lines = e.target.value.split('\n');
+        setPackageFormData((prev: any) => ({ ...prev, digitalItems: lines }));
+    };
+
     const addDigitalItem = () => {
         setPackageFormData((prev: any) => ({ ...prev, digitalItems: [...prev.digitalItems, ''] }));
     };
@@ -1056,14 +1061,13 @@ const Packages: React.FC<PackagesProps> = ({ packages, setPackages, addOns, setA
                     {/* Section 6: Deskripsi Package */}
                     <section className="bg-white/40 md:bg-transparent rounded-2xl md:rounded-none p-4 md:p-0 border md:border-0 border-brand-border/40">
                         <h4 className="text-sm md:text-base font-semibold text-gradient border-b border-brand-border/40 pb-2 mb-4">Deskripsi Package</h4>
-                        <p className="text-xs text-brand-text-secondary mb-3">Daftar item atau rincian layanan yang akan diterima pengantin.</p>
-                        {packageFormData.digitalItems.map((item: string, index: number) => (
-                            <div key={index} className="flex flex-col md:flex-row items-stretch md:items-center gap-2 mt-2">
-                                <input type="text" value={item} onChange={e => handleDigitalItemChange(index, e)} className="input-field flex-grow" placeholder="Contoh: Deskripsi detail layanan atau item" />
-                                <button type="button" onClick={() => removeDigitalItem(index)} className="button-secondary !px-3 !py-2 text-brand-danger self-end md:self-center"><Trash2Icon className="w-4 h-4" /></button>
-                            </div>
-                        ))}
-                        <button type="button" onClick={addDigitalItem} className="text-sm font-semibold text-brand-accent mt-3">+ Tambah Item Deskripsi</button>
+                        <p className="text-xs text-brand-text-secondary mb-3">Daftar item atau rincian layanan yang akan diterima pengantin. Tekan <kbd className="px-1 py-0.5 rounded bg-brand-border/40 font-mono text-xs">Enter</kbd> untuk baris baru.</p>
+                        <textarea
+                            value={packageFormData.digitalItems.join('\n')}
+                            onChange={handleDigitalItemsTextarea}
+                            className="input-field w-full min-h-[180px] resize-y text-sm leading-relaxed"
+                            placeholder={"Contoh:\nFoto prewedding 2 jam\nFoto akad nikah\nAlbum foto 20x30cm\nSoft file full resolusi"}
+                        />
                     </section>
 
                     {/* Section 7: Vendor */}
