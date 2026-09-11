@@ -37,6 +37,7 @@ export const ROUTE_TO_VIEW_MAP: Record<string, ViewType> = {
   gallery: ViewType.GALLERY,
   "client-reports": ViewType.CLIENT_REPORTS,
   settings: ViewType.SETTINGS,
+  "vendor-profile": ViewType.VENDOR_PROFILE,
   invoices: ViewType.INVOICES,
 };
 
